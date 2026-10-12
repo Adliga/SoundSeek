@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# Модели (весят много, качаются отдельно)
+models/*
+!models/.gitkeep
+
+# Данные
+data/*
+!data/.gitkeep
+
+# FAISS-индексы
+*.faiss
+*.index
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db

@@ -1,7 +1,12 @@
 # Нейросетевые модели
 transformers>=4.40.0
+
 torch>=2.2.0
+jiwer>=3.0.4 
+
 sentence-transformers>=2.7.0
+
+openai-whisper>=20231117
 
 # Векторный поиск
 faiss-cpu>=1.8.0

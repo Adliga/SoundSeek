@@ -1,4 +1,4 @@
-# Python
+# --- Python ---
 __pycache__/
 *.py[cod]
 *.egg-info/
@@ -6,22 +6,37 @@ __pycache__/
 venv/
 env/
 
-# Модели (весят много, качаются отдельно)
+# --- Модели (весят много, качаются автоматически) ---
 models/*
 !models/.gitkeep
 
-# Данные
-data/*
+# --- Данные пользователя (личная аудиотека) ---
+data/*.mp3
+data/*.wav
+data/*.flac
+data/*.ogg
+data/*.m4a
+data/separated/
 !data/.gitkeep
 
-# FAISS-индексы
-*.faiss
-*.index
+# --- Индекс (генерируется автоматически, восстанавливается индексацией) ---
+data/library.audio.faiss
+data/library.text.faiss
+data/library.tracks
 
-# IDE
+# --- Дополнительные треки (личные файлы) ---
+dop_tracks/
+
+# --- Результаты экспериментов ---
+experiments/separated/
+experiments/results/
+
+# --- IDE ---
 .vscode/
 .idea/
 
-# OS
+# --- OS ---
 .DS_Store
 Thumbs.db
+
+plan.txt

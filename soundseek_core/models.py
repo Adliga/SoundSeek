@@ -15,3 +15,4 @@ class Track:
     duration: float = 0.0
     has_vocal: bool = False
     lyrics: str = ""
+    cover_path: str = ""

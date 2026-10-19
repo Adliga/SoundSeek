@@ -25,7 +25,7 @@ SAMPLE_RATE = 48000
 SEGMENT_SECONDS = 30
 CLAP_MODEL_NAME = "laion/clap-htsat-unfused"
 MINILM_MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
-WHISPER_MODEL_SIZE = "base"
+WHISPER_MODEL_SIZE = "small"
 AUDIO_EXTENSIONS = (".mp3", ".wav", ".flac", ".ogg", ".m4a")
 MIN_LYRICS_LENGTH = 15
 EXCLUDED_DIRS = {"separated", "__pycache__", ".git"}
@@ -167,6 +167,13 @@ class AudioIndexer:
         audio_emb = self.get_audio_embedding(audio)
         t_audio = time.time() - t0
 
+        # --- Теги и обложка ---
+        from .tags import read_tags, extract_cover
+        tags = read_tags(path)
+        covers_dir = Path("data/covers")
+        cover_path = extract_cover(path, track_id, covers_dir)
+
+        # --- Классификация жанра и настроения ---
         genre, mood = "", ""
         t_classify = 0.0
         if self.ontology is not None:
@@ -174,19 +181,27 @@ class AudioIndexer:
             genre, mood = self.classify_audio(audio_emb, self.ontology)
             t_classify = time.time() - t3
 
+        duration = librosa.get_duration(path=path)
+
         track = Track(
             id=track_id,
             path=str(Path(path).resolve()),
-            duration=librosa.get_duration(path=path),
-            genre=genre,
+            title=tags.get("title", "") or "",
+            artist=tags.get("artist", "") or "",
+            album=tags.get("album", "") or "",
+            year=tags.get("year"),
+            genre=genre or tags.get("genre", "") or "",
             mood=mood,
+            duration=duration,
+            cover_path=cover_path,
         )
         self.db.add(audio_emb, track, text_embedding=None)
 
         total = time.time() - t0
+        title_display = track.title[:40] if track.title else track.id
         print(
             f"  [{total:.1f} сек: audio {t_audio:.1f} + classify {t_classify:.1f}] "
-            f"{genre}/{mood} | {Path(path).name}"
+            f"{track.genre}/{track.mood} | {title_display}"
         )
         return track
 

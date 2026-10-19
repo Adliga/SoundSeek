@@ -11,21 +11,18 @@ models/*
 !models/.gitkeep
 
 # --- Данные пользователя (личная аудиотека) ---
-data/*.mp3
-data/*.wav
-data/*.flac
-data/*.ogg
-data/*.m4a
-data/separated/
-!data/.gitkeep
+# --- Данные пользователя (личная аудиотека) ---
+data/tracks/
+!data/tracks/.gitkeep
+
+# --- Индексы (генерируются автоматически) ---
+data/indexes/
+!data/indexes/.gitkeep
 
 # --- Индекс (генерируется автоматически, восстанавливается индексацией) ---
 data/library.audio.faiss
 data/library.text.faiss
 data/library.tracks
-
-# --- Дополнительные треки (личные файлы) ---
-dop_tracks/
 
 # --- Результаты экспериментов ---
 experiments/separated/
@@ -40,3 +37,9 @@ experiments/results/
 Thumbs.db
 
 plan.txt
+
+# --- Обложки (извлекаются из аудиофайлов) ---
+data/covers/
+!data/covers/.gitkeep
+
+Z

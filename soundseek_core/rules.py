@@ -6,7 +6,6 @@ from .models import Track
 from .ontology import Ontology
 
 
-# Стоп-слова: не учитываем при сравнении
 STOP_WORDS = {
     "the", "a", "an", "and", "or", "of", "to", "in", "on", "at", "is", "it",
     "this", "that", "for", "with", "by", "from",
@@ -32,29 +31,24 @@ class Rule:
 
 
 def _tokenize(text: str) -> List[str]:
-    """Разбивает текст на слова, убирает пунктуацию, приводит к нижнему регистру."""
     text = text.lower()
     text = re.sub(r"[^\w\s\-]", " ", text, flags=re.UNICODE)
-    words = [w for w in text.split() if len(w) >= MIN_WORD_LEN and w not in STOP_WORDS]
-    return words
+    return [w for w in text.split() if len(w) >= MIN_WORD_LEN and w not in STOP_WORDS]
 
 
 def _extract_phrases(words: List[str], n: int = 2) -> List[str]:
-    """Возвращает список n-грамм (фраз из n слов подряд)."""
     if len(words) < n:
         return []
     return [" ".join(words[i:i+n]) for i in range(len(words) - n + 1)]
 
 
 def _prefix_match(word: str, target: str, min_prefix: int = 4) -> bool:
-    """Проверяет, есть ли у двух слов общий префикс (упрощённая морфология)."""
     if len(word) < min_prefix or len(target) < min_prefix:
         return word == target
     return word[:min_prefix] == target[:min_prefix]
 
 
 def _word_in_text(word: str, haystack_words: Set[str]) -> bool:
-    """Ищет слово в тексте с учётом префиксов."""
     if word in haystack_words:
         return True
     return any(_prefix_match(word, hw) for hw in haystack_words)
@@ -69,11 +63,7 @@ class RuleEngine:
     def add_rule(self, rule: Rule) -> None:
         self.rules.append(rule)
 
-    def apply(
-        self,
-        query: str,
-        candidates: List[tuple],
-    ) -> List[dict]:
+    def apply(self, query: str, candidates: List[tuple]) -> List[dict]:
         concepts = self.ontology.extract_concepts(query)
         results = []
 
@@ -108,7 +98,6 @@ class RuleEngine:
         results.sort(key=lambda r: r["final_score"], reverse=True)
         return results
 
-    # ---------- Правила ----------
     def _register_default_rules(self) -> None:
         self.add_rule(Rule("genre_match", self._genre_in_query, self._boost_on_genre_match))
         self.add_rule(Rule("mood_match", self._mood_in_query, self._boost_on_mood_match))
@@ -119,44 +108,51 @@ class RuleEngine:
     # ---------- Жанр ----------
     @staticmethod
     def _genre_in_query(query, track, concepts, ontology) -> bool:
-        return bool(concepts["genres"]) and bool(track.genre)
+        # Сравниваем с жанром из тега (если есть) или вычисленным
+        genre = track.tags.genre or track.derived.genre
+        return bool(concepts["genres"]) and bool(genre)
 
     def _boost_on_genre_match(self, query, track, concepts, ontology):
+        # Приоритет: если жанр есть в теге — используем его (человеческая разметка)
+        genre = track.tags.genre or track.derived.genre
+        if not genre:
+            return None
+        source = "тег" if track.tags.genre else "CLAP"
         for g in concepts["genres"]:
-            if ontology.is_genre_related(g, track.genre):
+            if ontology.is_genre_related(g, genre):
                 return RuleResult(
                     rule_name="genre_match",
                     score_delta=0.30,
-                    explanation=f"совпадение по жанру ({track.genre} ~ {g})",
+                    explanation=f"совпадение по жанру ({genre} ~ {g}, источник: {source})",
                 )
         return None
 
     # ---------- Настроение ----------
     @staticmethod
     def _mood_in_query(query, track, concepts, ontology) -> bool:
-        return bool(concepts["moods"]) and bool(track.mood)
+        return bool(concepts["moods"]) and bool(track.derived.mood)
 
     def _boost_on_mood_match(self, query, track, concepts, ontology):
+        mood = track.derived.mood
         for m in concepts["moods"]:
-            if m == track.mood:
+            if m == mood:
                 return RuleResult(
                     rule_name="mood_match",
                     score_delta=0.20,
                     explanation=f"совпадение по настроению ({m})",
                 )
-            if m in ontology.moods.get(track.mood, {}).get("children", []) \
-               or track.mood in ontology.moods.get(m, {}).get("children", []):
+            if m in ontology.moods.get(mood, {}).get("children", []) \
+               or mood in ontology.moods.get(m, {}).get("children", []):
                 return RuleResult(
                     rule_name="mood_match",
                     score_delta=0.10,
-                    explanation=f"близкое настроение ({track.mood} ~ {m})",
+                    explanation=f"близкое настроение ({mood} ~ {m})",
                 )
         return None
 
     # ---------- Метаданные ----------
     @staticmethod
     def _query_in_metadata(query, track, concepts, ontology) -> bool:
-        # Быстрая проверка: есть ли вообще что-то осмысленное в запросе
         return len(_tokenize(query)) > 0
 
     def _boost_on_metadata(self, query, track, concepts, ontology):
@@ -164,11 +160,13 @@ class RuleEngine:
         if not query_words:
             return None
 
-        # Метаданные: имя файла + путь + поля
-        meta_text = f"{track.id} {track.title} {track.artist} {track.album} {track.path}"
+        t = track.tags
+        meta_text = " ".join([
+            track.id, t.title, t.artist, t.album, t.album_artist,
+            t.composer, t.comment, track.path,
+        ])
         meta_words = set(_tokenize(meta_text))
 
-        # 1. Фразы по 2 слова
         phrases = _extract_phrases(query_words, n=2)
         for phrase in phrases:
             if phrase in meta_text.lower():
@@ -178,7 +176,6 @@ class RuleEngine:
                     explanation=f"совпадение по метаданным (фраза: «{phrase}»)",
                 )
 
-        # 2. Отдельные слова
         matched = [w for w in query_words if _word_in_text(w, meta_words)]
         if matched:
             return RuleResult(
@@ -191,22 +188,22 @@ class RuleEngine:
     # ---------- Текст песни ----------
     @staticmethod
     def _query_in_lyrics(query, track, concepts, ontology) -> bool:
-        if not track.lyrics:
+        if not track.derived.lyrics:
             return False
         return len(_tokenize(query)) > 0
 
     def _boost_on_lyrics(self, query, track, concepts, ontology):
-        if not track.lyrics:
+        lyrics = track.derived.lyrics
+        if not lyrics:
             return None
 
         query_words = _tokenize(query)
         if not query_words:
             return None
 
-        lyrics_lower = track.lyrics.lower()
-        lyrics_words = set(_tokenize(track.lyrics))
+        lyrics_lower = lyrics.lower()
+        lyrics_words = set(_tokenize(lyrics))
 
-        # 1. Фразы по 2 слова
         phrases = _extract_phrases(query_words, n=2)
         for phrase in phrases:
             if phrase in lyrics_lower:
@@ -216,7 +213,6 @@ class RuleEngine:
                     explanation=f"совпадение по тексту песни (фраза: «{phrase}»)",
                 )
 
-        # 2. Отдельные слова
         matched = [w for w in query_words if _word_in_text(w, lyrics_words)]
         if matched:
             return RuleResult(
@@ -229,12 +225,14 @@ class RuleEngine:
     # ---------- Конфликт жанров ----------
     @staticmethod
     def _genre_conflict(query, track, concepts, ontology) -> bool:
-        return bool(concepts["genres"]) and bool(track.genre) \
-               and not ontology.is_genre_related(concepts["genres"][0], track.genre)
+        genre = track.tags.genre or track.derived.genre
+        return bool(concepts["genres"]) and bool(genre) \
+               and not ontology.is_genre_related(concepts["genres"][0], genre)
 
     def _penalty_on_genre_conflict(self, query, track, concepts, ontology):
+        genre = track.tags.genre or track.derived.genre
         return RuleResult(
             rule_name="genre_conflict",
             score_delta=-0.20,
-            explanation=f"жанр трека ({track.genre}) не соответствует запросу ({concepts['genres'][0]})",
+            explanation=f"жанр трека ({genre}) не соответствует запросу ({concepts['genres'][0]})",
         )

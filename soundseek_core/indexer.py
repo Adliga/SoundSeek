@@ -1,4 +1,5 @@
 import os
+import re
 
 os.environ["HF_HUB_DISABLE_SYMLINKS_WARNING"] = "1"
 os.environ["DEMUCS_DEVICE"] = "cpu"
@@ -12,12 +13,12 @@ import torch
 import torch.nn.functional as F
 import whisper
 from pathlib import Path
-from typing import Optional, List, Tuple
+from typing import Optional, List, Tuple, Callable
 from transformers import ClapModel, ClapProcessor
 from sentence_transformers import SentenceTransformer
 from demucs_onnx import separate_stem
 
-from .models import Track
+from .models import Track, FileTags, DerivedData
 from .db import VectorDB
 
 
@@ -25,11 +26,14 @@ SAMPLE_RATE = 48000
 SEGMENT_SECONDS = 30
 CLAP_MODEL_NAME = "laion/clap-htsat-unfused"
 MINILM_MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
-WHISPER_MODEL_SIZE = "small"
+WHISPER_MODEL_SIZE = "base"
 AUDIO_EXTENSIONS = (".mp3", ".wav", ".flac", ".ogg", ".m4a")
 MIN_LYRICS_LENGTH = 15
-EXCLUDED_DIRS = {"separated", "__pycache__", ".git"}
+EXCLUDED_DIRS = {"separated", "__pycache__", ".git", "covers", "indexes"}
 EXCLUDED_PREFIXES = ("library", "vocals", "no_vocals")
+
+CONFIDENCE_THRESHOLD = 0.15
+MIN_MUSIC_DURATION = 10.0
 
 
 class AudioIndexer:
@@ -42,7 +46,7 @@ class AudioIndexer:
         print("Загрузка MiniLM...")
         self.minilm = SentenceTransformer(MINILM_MODEL_NAME, device="cpu")
 
-        self.whisper = None  # ленивая загрузка
+        self.whisper = None
         self.ontology = ontology
 
         self.db = VectorDB(audio_dim=512, text_dim=384)
@@ -51,14 +55,12 @@ class AudioIndexer:
             self.db.load(db_path)
             print(f"Загружено {len(self.db)} треков из {db_path}")
 
-    # ---------- Ленивая загрузка Whisper ----------
     def _get_whisper(self):
         if self.whisper is None:
             print(f"Загрузка Whisper ({WHISPER_MODEL_SIZE})...")
             self.whisper = whisper.load_model(WHISPER_MODEL_SIZE)
         return self.whisper
 
-    # ---------- Аудио ----------
     def _load_audio_segment(self, path: str) -> np.ndarray:
         duration = librosa.get_duration(path=path)
         if duration > SEGMENT_SECONDS:
@@ -88,38 +90,102 @@ class AudioIndexer:
             emb = outputs.pooler_output if hasattr(outputs, "pooler_output") else outputs
         return emb.numpy().flatten()
 
-    # ---------- Zero-shot классификация ----------
-    def classify_audio(self, audio_emb: np.ndarray, ontology) -> tuple:
-        def _best(prompts: dict) -> str:
-            if not prompts:
-                return ""
-            names = list(prompts.keys())
-            texts = list(prompts.values())
+    def _best_prompt(self, audio_emb: np.ndarray, prompts: dict,
+                     threshold: float = CONFIDENCE_THRESHOLD) -> tuple:
+        if not prompts:
+            return "unknown", 0.0
 
-            inputs = self.clap_processor(
-                text=texts,
-                return_tensors="pt",
-                padding=True,
-                truncation=True,
-                max_length=77,
-            )
-            with torch.no_grad():
-                outputs = self.clap_model.get_text_features(**inputs)
-                text_embs = outputs.pooler_output if hasattr(outputs, "pooler_output") else outputs
+        names = list(prompts.keys())
+        texts = list(prompts.values())
 
-            audio_t = torch.tensor(audio_emb).unsqueeze(0).float()
-            audio_t = F.normalize(audio_t, dim=-1)
-            text_embs = F.normalize(text_embs, dim=-1)
+        inputs = self.clap_processor(
+            text=texts, return_tensors="pt",
+            padding=True, truncation=True, max_length=77,
+        )
+        with torch.no_grad():
+            outputs = self.clap_model.get_text_features(**inputs)
+            text_embs = outputs.pooler_output if hasattr(outputs, "pooler_output") else outputs
 
-            sims = (audio_t @ text_embs.T).squeeze(0)
-            best_idx = int(torch.argmax(sims))
-            return names[best_idx]
+        audio_t = torch.tensor(audio_emb).unsqueeze(0).float()
+        audio_t = F.normalize(audio_t, dim=-1)
+        text_embs = F.normalize(text_embs, dim=-1)
 
-        genre = _best(ontology.get_genre_prompts())
-        mood = _best(ontology.get_mood_prompts())
-        return genre, mood
+        sims = (audio_t @ text_embs.T).squeeze(0)
+        best_idx = int(torch.argmax(sims))
+        best_score = float(sims[best_idx])
 
-    # ---------- Вокал и текст ----------
+        if best_score < threshold:
+            return "unknown", best_score
+        return names[best_idx], best_score
+
+    def _map_tag_genre(self, tag_value: str, ontology) -> str:
+        if not tag_value:
+            return ""
+        tokens = re.split(r"[;,/]", tag_value.lower())
+        candidates = []
+        for token in tokens:
+            token = token.strip()
+            concept = ontology._keyword_to_concept.get(token)
+            if concept and concept in ontology.genres:
+                candidates.append(concept)
+        if not candidates:
+            return ""
+        for c in candidates:
+            if ontology.genres[c].get("parent"):
+                return c
+        return candidates[0]
+
+    def classify_audio(self, audio_emb, ontology, duration: float = 0.0,
+                       tag_genre: str = "", filename: str = "") -> dict:
+        result = {
+            "content_type": "unknown",
+            "genre": "",
+            "mood": "",
+            "confidences": {},
+            "genre_source": "",
+        }
+
+        ct, ct_score = self._best_prompt(audio_emb, ontology.get_content_type_prompts())
+        result["confidences"]["content_type"] = round(ct_score, 3)
+        if ct == "unknown" and duration > MIN_MUSIC_DURATION:
+            ct = "music"
+        result["content_type"] = ct
+
+        if ct != "music":
+            return result
+
+        all_leaves = ontology.get_all_leaf_prompts()
+        clap_genre, g_score = self._best_prompt(audio_emb, all_leaves)
+        result["confidences"]["genre_clap"] = round(g_score, 3)
+
+        filename_genre = ""
+        if filename:
+            fn_concepts = ontology.extract_concepts(filename)
+            if fn_concepts["genres"]:
+                filename_genre = fn_concepts["genres"][0]
+
+        tag_mapped = self._map_tag_genre(tag_genre, ontology)
+
+        if tag_mapped:
+            result["genre"] = tag_mapped
+            result["genre_source"] = "tag"
+            if clap_genre != "unknown" and not ontology.is_genre_related(tag_mapped, clap_genre):
+                result["confidences"]["genre_conflict"] = f"tag={tag_mapped} vs clap={clap_genre}"
+        elif filename_genre:
+            result["genre"] = filename_genre
+            result["genre_source"] = "filename"
+            if clap_genre != "unknown" and not ontology.is_genre_related(filename_genre, clap_genre):
+                result["confidences"]["genre_conflict"] = f"file={filename_genre} vs clap={clap_genre}"
+        elif clap_genre != "unknown":
+            result["genre"] = clap_genre
+            result["genre_source"] = "clap"
+
+        mood, m_score = self._best_prompt(audio_emb, ontology.get_mood_prompts())
+        result["mood"] = "" if mood == "unknown" else mood
+        result["confidences"]["mood"] = round(m_score, 3)
+
+        return result
+
     def _separate_vocals(self, path: str, tmp_dir: str) -> Optional[str]:
         try:
             separate_stem(path, stem="vocals", output_dir=tmp_dir)
@@ -140,7 +206,6 @@ class AudioIndexer:
             print(f"    Whisper ошибка: {e}")
             return ""
 
-    # ---------- Сбор файлов ----------
     def _collect_audio_files(self, folder: Path) -> list:
         files = []
         for f in folder.rglob("*"):
@@ -155,7 +220,6 @@ class AudioIndexer:
             files.append(f)
         return files
 
-    # ---------- ПРОХОД 1: лёгкая индексация ----------
     def index_file_light(self, path: str) -> Optional[Track]:
         track_id = Path(path).stem
         if self.db.contains(track_id):
@@ -167,41 +231,59 @@ class AudioIndexer:
         audio_emb = self.get_audio_embedding(audio)
         t_audio = time.time() - t0
 
-        # --- Теги и обложка ---
         from .tags import read_tags, extract_cover
-        tags = read_tags(path)
+        raw_tags = read_tags(path)
         covers_dir = Path("data/covers")
         cover_path = extract_cover(path, track_id, covers_dir)
 
-        # --- Классификация жанра и настроения ---
-        genre, mood = "", ""
-        t_classify = 0.0
-        if self.ontology is not None:
-            t3 = time.time()
-            genre, mood = self.classify_audio(audio_emb, self.ontology)
-            t_classify = time.time() - t3
+        tags = FileTags(
+            title=raw_tags.get("title", ""),
+            artist=raw_tags.get("artist", ""),
+            album=raw_tags.get("album", ""),
+            album_artist=raw_tags.get("album_artist", ""),
+            year=raw_tags.get("year"),
+            track_number=raw_tags.get("track_number"),
+            disc_number=raw_tags.get("disc_number"),
+            genre=raw_tags.get("genre", ""),
+            composer=raw_tags.get("composer", ""),
+            comment=raw_tags.get("comment", ""),
+            cover_path=cover_path,
+        )
 
         duration = librosa.get_duration(path=path)
 
-        track = Track(
-            id=track_id,
-            path=str(Path(path).resolve()),
-            title=tags.get("title", "") or "",
-            artist=tags.get("artist", "") or "",
-            album=tags.get("album", "") or "",
-            year=tags.get("year"),
-            genre=genre or tags.get("genre", "") or "",
-            mood=mood,
+        classification = {"content_type": "unknown", "genre": "", "mood": "", "confidences": {}}
+        t_classify = 0.0
+        if self.ontology is not None:
+            t3 = time.time()
+            classification = self.classify_audio(
+                audio_emb, self.ontology,
+                duration=duration,
+                tag_genre=tags.genre,
+                filename=Path(path).name,
+            )
+            t_classify = time.time() - t3
+
+        derived = DerivedData(
+            content_type=classification["content_type"],
+            genre=classification["genre"],
+            mood=classification["mood"],
             duration=duration,
-            cover_path=cover_path,
         )
+
+        track = Track(id=track_id, path=str(Path(path).resolve()), tags=tags, derived=derived)
         self.db.add(audio_emb, track, text_embedding=None)
 
         total = time.time() - t0
-        title_display = track.title[:40] if track.title else track.id
+        title_display = (tags.title or track_id)[:40]
+        conf = classification["confidences"]
+        conf_str = f"ct={conf.get('content_type', 0)}" if conf else ""
+        source = classification.get("genre_source", "")
+        source_str = f"[{source}]" if source else ""
         print(
             f"  [{total:.1f} сек: audio {t_audio:.1f} + classify {t_classify:.1f}] "
-            f"{track.genre}/{track.mood} | {title_display}"
+            f"{derived.content_type}/{derived.genre or '—'}/{derived.mood or '—'} "
+            f"({conf_str}) {source_str} | {title_display}"
         )
         return track
 
@@ -221,48 +303,117 @@ class AudioIndexer:
             print(f"База сохранена: {self.db_path}")
         return len(files)
 
-    # ---------- ПРОХОД 2: обогащение текстом ----------
-    def enrich_with_lyrics(self, max_tracks: Optional[int] = None) -> int:
-        targets = [t for t in self.db.tracks if not t.lyrics]
+    def reset_db(self):
+        import faiss
+        self.db.audio_index = faiss.IndexFlatIP(self.db.audio_dim)
+        self.db.text_index = faiss.IndexFlatIP(self.db.text_dim)
+        self.db.tracks = []
+        self.db.ids = set()
+        self.db.text_embeddings = []
+        print("База сброшена.")
+
+    def enrich_single_track(self, track: Track) -> bool:
+        t0 = time.time()
+        lyrics = ""
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            vocals_path = self._separate_vocals(track.path, tmp_dir)
+            if vocals_path:
+                lyrics = self._transcribe(vocals_path)
+
+        if len(lyrics) >= MIN_LYRICS_LENGTH:
+            track.derived.lyrics = lyrics
+            track.derived.has_vocal = True
+            text_emb = self.get_text_embedding(lyrics)
+            self.db.update_text(track.id, text_emb)
+        else:
+            track.derived.has_vocal = False
+            track.derived.lyrics = ""
+
+        if self.db_path:
+            self.db.save(self.db_path)
+
+        elapsed = time.time() - t0
+        vocal_flag = "вокал" if track.derived.has_vocal else "инстр."
+        print(f"  [{elapsed:.1f} сек] {vocal_flag} | {track.id}")
+
+        return track.derived.has_vocal
+
+    def enrich_with_lyrics(self, max_tracks: Optional[int] = None,
+                           on_progress: Optional[Callable[[int, int, str], None]] = None) -> int:
+        targets = [t for t in self.db.tracks if not t.derived.lyrics]
         if max_tracks:
             targets = targets[:max_tracks]
 
-        print(f"Треков для обогащения: {len(targets)}")
+        total = len(targets)
+        print(f"Треков для обогащения: {total}")
         for i, track in enumerate(targets, 1):
-            print(f"[{i}/{len(targets)}] {track.id}")
+            print(f"[{i}/{total}] {track.id}", end=" ")
+            try:
+                self.enrich_single_track(track)
+            except Exception as e:
+                print(f"  Ошибка: {e}")
 
-            t0 = time.time()
-            lyrics = ""
-            text_emb = None
-            t_demucs = t_whisper = 0.0
+            if on_progress:
+                try:
+                    on_progress(i, total, track.id)
+                except Exception:
+                    pass
 
-            with tempfile.TemporaryDirectory() as tmp_dir:
-                t1 = time.time()
-                vocals_path = self._separate_vocals(track.path, tmp_dir)
-                t_demucs = time.time() - t1
+        return total
 
-                if vocals_path:
-                    t2 = time.time()
-                    lyrics = self._transcribe(vocals_path)
-                    t_whisper = time.time() - t2
+    # ---------- Ручное редактирование метаданных ----------
+    def update_track_fields(
+        self,
+        track_id: str,
+        title: Optional[str] = None,
+        artist: Optional[str] = None,
+        album: Optional[str] = None,
+        year: Optional[int] = None,
+        tag_genre: Optional[str] = None,
+        derived_genre: Optional[str] = None,
+        derived_mood: Optional[str] = None,
+        lyrics: Optional[str] = None,
+        user_notes: Optional[str] = None,
+    ) -> Optional[Track]:
+        """Обновляет поля трека. При изменении lyrics пересчитывает текстовый эмбеддинг."""
+        track = next((t for t in self.db.tracks if t.id == track_id), None)
+        if not track:
+            return None
 
-            if len(lyrics) >= MIN_LYRICS_LENGTH:
-                track.lyrics = lyrics
-                track.has_vocal = True
+        if title is not None:
+            track.tags.title = title
+        if artist is not None:
+            track.tags.artist = artist
+        if album is not None:
+            track.tags.album = album
+        if year is not None:
+            track.tags.year = year if year else None
+        if tag_genre is not None:
+            track.tags.genre = tag_genre
+        if derived_genre is not None:
+            track.derived.genre = derived_genre
+            if derived_genre:
+                track.derived.content_type = "music"
+        if derived_mood is not None:
+            track.derived.mood = derived_mood
+        if user_notes is not None:
+            track.derived.user_notes = user_notes
+
+        lyrics_changed = False
+        if lyrics is not None and lyrics != track.derived.lyrics:
+            lyrics_changed = True
+            track.derived.lyrics = lyrics
+            track.derived.has_vocal = bool(lyrics.strip())
+
+        if lyrics_changed:
+            if lyrics.strip():
                 text_emb = self.get_text_embedding(lyrics)
                 self.db.update_text(track.id, text_emb)
             else:
-                track.has_vocal = False
+                self.db.update_text(track.id, np.zeros(self.db.text_dim, dtype="float32"))
 
-            total = time.time() - t0
-            vocal_flag = "вокал" if track.has_vocal else "инстр."
-            print(
-                f"  [{total:.1f} сек: demucs {t_demucs:.1f} + whisper {t_whisper:.1f}] "
-                f"{vocal_flag}"
-            )
+        if self.db_path:
+            self.db.save(self.db_path)
 
-            if self.db_path:
-                self.db.save(self.db_path)
-
-        return len(targets)
-  
+        return track

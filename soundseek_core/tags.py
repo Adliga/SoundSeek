@@ -8,11 +8,7 @@ from mutagen.flac import FLAC
 from mutagen.mp4 import MP4
 
 
-COVERS_DIR_NAME = "covers"
-
-
 def _extract_year(value) -> Optional[int]:
-    """Пытается вытащить год из строки вида '2005', '2005-04-12' и т. п."""
     if not value:
         return None
     if isinstance(value, int):
@@ -24,11 +20,25 @@ def _extract_year(value) -> Optional[int]:
     return None
 
 
+def _extract_int(value) -> Optional[int]:
+    if not value:
+        return None
+    text = str(value).split("/")[0].strip()
+    return int(text) if text.isdigit() else None
+
+
 def _first(value):
-    """Возвращает первый элемент, если пришёл список, иначе само значение."""
     if isinstance(value, list) and value:
         return value[0]
     return value
+
+
+def _clean(value) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, list):
+        return ", ".join(str(v) for v in value)
+    return str(value)
 
 
 def _read_mp3(path: Path) -> Dict[str, Any]:
@@ -39,11 +49,16 @@ def _read_mp3(path: Path) -> Dict[str, Any]:
             return result
 
         tags = audio.tags
-        result["title"] = str(tags.get("TIT2", ""))
-        result["artist"] = str(tags.get("TPE1", ""))
-        result["album"] = str(tags.get("TALB", ""))
+        result["title"] = _clean(tags.get("TIT2"))
+        result["artist"] = _clean(tags.get("TPE1"))
+        result["album"] = _clean(tags.get("TALB"))
+        result["album_artist"] = _clean(tags.get("TPE2"))
         result["year"] = _extract_year(tags.get("TDRC") or tags.get("TYER"))
-        result["genre"] = str(tags.get("TCON", ""))
+        result["track_number"] = _extract_int(tags.get("TRCK"))
+        result["disc_number"] = _extract_int(tags.get("TPOS"))
+        result["genre"] = _clean(tags.get("TCON"))
+        result["composer"] = _clean(tags.get("TCOM"))
+        result["comment"] = _clean(tags.get("COMM::eng") or tags.get("COMM"))
 
         for tag in tags.values():
             if isinstance(tag, APIC):
@@ -59,11 +74,16 @@ def _read_flac(path: Path) -> Dict[str, Any]:
     result = {}
     try:
         audio = FLAC(str(path))
-        result["title"] = _first(audio.get("title"))
-        result["artist"] = _first(audio.get("artist"))
-        result["album"] = _first(audio.get("album"))
+        result["title"] = _first(audio.get("title")) or ""
+        result["artist"] = _first(audio.get("artist")) or ""
+        result["album"] = _first(audio.get("album")) or ""
+        result["album_artist"] = _first(audio.get("albumartist")) or ""
         result["year"] = _extract_year(_first(audio.get("date")))
-        result["genre"] = _first(audio.get("genre"))
+        result["track_number"] = _extract_int(_first(audio.get("tracknumber")))
+        result["disc_number"] = _extract_int(_first(audio.get("discnumber")))
+        result["genre"] = _first(audio.get("genre")) or ""
+        result["composer"] = _first(audio.get("composer")) or ""
+        result["comment"] = _first(audio.get("comment")) or ""
         if audio.pictures:
             pic = audio.pictures[0]
             result["_cover_data"] = pic.data
@@ -77,11 +97,16 @@ def _read_mp4(path: Path) -> Dict[str, Any]:
     result = {}
     try:
         audio = MP4(str(path))
-        result["title"] = _first(audio.get("\xa9nam"))
-        result["artist"] = _first(audio.get("\xa9ART"))
-        result["album"] = _first(audio.get("\xa9alb"))
+        result["title"] = _first(audio.get("\xa9nam")) or ""
+        result["artist"] = _first(audio.get("\xa9ART")) or ""
+        result["album"] = _first(audio.get("\xa9alb")) or ""
+        result["album_artist"] = _first(audio.get("aART")) or ""
         result["year"] = _extract_year(_first(audio.get("\xa9day")))
-        result["genre"] = _first(audio.get("\xa9gen"))
+        result["track_number"] = _extract_int(_first(audio.get("trkn")))
+        result["disc_number"] = _extract_int(_first(audio.get("disk")))
+        result["genre"] = _first(audio.get("\xa9gen")) or ""
+        result["composer"] = _first(audio.get("\xa9wrt")) or ""
+        result["comment"] = _first(audio.get("\xa9cmt")) or ""
         covers = audio.get("covr")
         if covers:
             result["_cover_data"] = bytes(covers[0])
@@ -92,27 +117,27 @@ def _read_mp4(path: Path) -> Dict[str, Any]:
 
 
 def _read_ogg(path: Path) -> Dict[str, Any]:
-    """OGG/OPUS через общий MutagenFile."""
     result = {}
     try:
         audio = MutagenFile(str(path))
         if audio is None or audio.tags is None:
             return result
-        result["title"] = _first(audio.tags.get("title"))
-        result["artist"] = _first(audio.tags.get("artist"))
-        result["album"] = _first(audio.tags.get("album"))
+        result["title"] = _first(audio.tags.get("title")) or ""
+        result["artist"] = _first(audio.tags.get("artist")) or ""
+        result["album"] = _first(audio.tags.get("album")) or ""
+        result["album_artist"] = _first(audio.tags.get("albumartist")) or ""
         result["year"] = _extract_year(_first(audio.tags.get("date")))
-        result["genre"] = _first(audio.tags.get("genre"))
+        result["track_number"] = _extract_int(_first(audio.tags.get("tracknumber")))
+        result["disc_number"] = _extract_int(_first(audio.tags.get("discnumber")))
+        result["genre"] = _first(audio.tags.get("genre")) or ""
+        result["composer"] = _first(audio.tags.get("composer")) or ""
+        result["comment"] = _first(audio.tags.get("comment")) or ""
     except Exception as e:
         print(f"    mutagen OGG: {e}")
     return result
 
 
 def read_tags(path: str) -> Dict[str, Any]:
-    """Читает теги из аудиофайла. Возвращает словарь с полями:
-
-    title, artist, album, year, genre, _cover_data, _cover_mime
-    """
     p = Path(path)
     ext = p.suffix.lower()
 
@@ -124,16 +149,10 @@ def read_tags(path: str) -> Dict[str, Any]:
         return _read_mp4(p)
     if ext in (".ogg", ".opus"):
         return _read_ogg(p)
-
     return {}
 
 
 def extract_cover(path: str, track_id: str, output_dir: Path) -> str:
-    """Извлекает обложку из аудиофайла и сохраняет её в output_dir.
-
-    Возвращает путь к сохранённому изображению или пустую строку,
-    если обложки нет.
-    """
     tags = read_tags(path)
     cover_data = tags.get("_cover_data")
     if not cover_data:

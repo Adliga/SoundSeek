@@ -10,6 +10,7 @@ class Ontology:
         self.moods = data["moods"]
         self.keywords = data["keywords"]
         self.prompts = data.get("prompts", {"genres": {}, "moods": {}})
+        self.content_types = data.get("content_types", {})
 
         self._keyword_to_concept = {}
         for concept, words in self.keywords.items():
@@ -71,3 +72,16 @@ class Ontology:
 
     def get_mood_prompts(self) -> dict:
         return self.prompts.get("moods", {})
+
+    def get_content_type_prompts(self) -> dict:
+        return self.content_types
+
+    def get_all_leaf_prompts(self) -> dict:
+        """Возвращает плоский словарь всех поджанров (листьев дерева)."""
+        leaves = {}
+        sub_prompts = self.prompts.get("subgenres", {})
+        for genre, info in self.genres.items():
+            # Если у жанра есть промпт и это лист (или мы хотим использовать его как конечный класс)
+            if genre in sub_prompts:
+                leaves[genre] = sub_prompts[genre]
+        return leaves

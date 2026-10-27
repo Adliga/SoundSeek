@@ -14,13 +14,13 @@ class Searcher:
 
     # ---------- Точное совпадение по метаданным ----------
     def _exact_metadata_match(self, query: str) -> List[tuple]:
-        """Ищет треки, у которых в title/artist/id встречается фраза из запроса."""
         q = query.lower().strip()
         if len(q) < 3:
             return []
         matches = []
         for track in self.db.tracks:
-            haystack = f"{track.title} {track.artist} {track.id}".lower()
+            t = track.tags
+            haystack = f"{t.title} {t.artist} {t.album} {track.id}".lower()
             if q in haystack:
                 matches.append((track, 1.0))
         return matches

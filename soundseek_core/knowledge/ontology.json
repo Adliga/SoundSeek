@@ -2,171 +2,636 @@
   "genres": {
     "rock": {
       "parent": null,
-      "children": ["punk_rock", "alternative_metal", "nu_metal", "hard_rock"],
-      "related_moods": ["energetic", "aggressive"]
+      "children": ["punk_rock", "alternative_metal", "hard_rock", "heavy_metal", "grunge", "indie_rock", "progressive_rock"],
+      "related_moods": ["energetic", "aggressive", "rebellious"]
     },
     "punk_rock": {
       "parent": "rock",
-      "children": [],
+      "children": ["horror_punk", "pop_punk", "hardcore_punk"],
       "related_moods": ["energetic", "aggressive", "rebellious"]
+    },
+    "horror_punk": {
+      "parent": "punk_rock",
+      "children": [],
+      "related_moods": ["dark", "intense", "energetic"]
+    },
+    "pop_punk": {
+      "parent": "punk_rock",
+      "children": [],
+      "related_moods": ["energetic", "cheerful", "rebellious"]
+    },
+    "hardcore_punk": {
+      "parent": "punk_rock",
+      "children": [],
+      "related_moods": ["aggressive", "angry", "intense"]
     },
     "alternative_metal": {
       "parent": "rock",
-      "children": ["nu_metal"],
-      "related_moods": ["aggressive", "dark"]
+      "children": ["nu_metal", "metalcore"],
+      "related_moods": ["aggressive", "dark", "intense"]
     },
     "nu_metal": {
       "parent": "alternative_metal",
       "children": [],
-      "related_moods": ["aggressive", "dark", "energetic"]
+      "related_moods": ["aggressive", "dark", "angry"]
+    },
+    "metalcore": {
+      "parent": "alternative_metal",
+      "children": [],
+      "related_moods": ["aggressive", "intense", "dark"]
     },
     "hard_rock": {
       "parent": "rock",
       "children": [],
-      "related_moods": ["energetic", "aggressive"]
+      "related_moods": ["energetic", "aggressive", "rebellious"]
     },
+    "heavy_metal": {
+      "parent": "rock",
+      "children": ["thrash_metal", "death_metal", "black_metal"],
+      "related_moods": ["aggressive", "intense", "dark"]
+    },
+    "thrash_metal": {
+      "parent": "heavy_metal",
+      "children": [],
+      "related_moods": ["aggressive", "angry", "intense"]
+    },
+    "death_metal": {
+      "parent": "heavy_metal",
+      "children": [],
+      "related_moods": ["aggressive", "dark", "intense"]
+    },
+    "black_metal": {
+      "parent": "heavy_metal",
+      "children": [],
+      "related_moods": ["dark", "ominous", "aggressive"]
+    },
+    "grunge": {
+      "parent": "rock",
+      "children": [],
+      "related_moods": ["melancholic", "dark", "rebellious"]
+    },
+    "indie_rock": {
+      "parent": "rock",
+      "children": [],
+      "related_moods": ["melancholic", "nostalgic", "dreamy"]
+    },
+    "progressive_rock": {
+      "parent": "rock",
+      "children": [],
+      "related_moods": ["epic", "mysterious", "meditative"]
+    },
+
     "pop": {
       "parent": null,
-      "children": ["synthpop", "indie_pop"],
-      "related_moods": ["happy", "uplifting"]
+      "children": ["synthpop", "indie_pop", "dance_pop", "k_pop", "j_pop", "r_and_b"],
+      "related_moods": ["happy", "cheerful", "uplifting"]
     },
     "synthpop": {
       "parent": "pop",
       "children": [],
-      "related_moods": ["happy", "dreamy"]
+      "related_moods": ["cheerful", "dreamy", "uplifting"]
     },
     "indie_pop": {
       "parent": "pop",
       "children": [],
-      "related_moods": ["dreamy", "melancholic"]
+      "related_moods": ["melancholic", "nostalgic", "dreamy"]
+    },
+    "dance_pop": {
+      "parent": "pop",
+      "children": [],
+      "related_moods": ["energetic", "cheerful", "euphoric"]
+    },
+    "k_pop": {
+      "parent": "pop",
+      "children": [],
+      "related_moods": ["cheerful", "energetic", "playful"]
+    },
+    "j_pop": {
+      "parent": "pop",
+      "children": [],
+      "related_moods": ["cheerful", "dreamy", "energetic"]
+    },
+    "r_and_b": {
+      "parent": "pop",
+      "children": [],
+      "related_moods": ["romantic", "sensual", "calm"]
+    },
+
+    "electronic": {
+      "parent": null,
+      "children": ["techno", "house", "trance", "dubstep", "drum_and_bass", "chiptune", "edm", "ambient"],
+      "related_moods": ["energetic", "euphoric", "dreamy"]
+    },
+    "techno": {
+      "parent": "electronic",
+      "children": [],
+      "related_moods": ["energetic", "intense", "meditative"]
+    },
+    "house": {
+      "parent": "electronic",
+      "children": [],
+      "related_moods": ["energetic", "cheerful", "euphoric"]
+    },
+    "trance": {
+      "parent": "electronic",
+      "children": [],
+      "related_moods": ["euphoric", "dreamy", "energetic"]
+    },
+    "dubstep": {
+      "parent": "electronic",
+      "children": [],
+      "related_moods": ["aggressive", "intense", "energetic"]
+    },
+    "drum_and_bass": {
+      "parent": "electronic",
+      "children": [],
+      "related_moods": ["energetic", "intense", "dark"]
+    },
+    "chiptune": {
+      "parent": "electronic",
+      "children": [],
+      "related_moods": ["playful", "cheerful", "quirky"]
+    },
+    "edm": {
+      "parent": "electronic",
+      "children": [],
+      "related_moods": ["energetic", "euphoric", "uplifting"]
     },
     "ambient": {
-      "parent": null,
+      "parent": "electronic",
       "children": ["dark_ambient"],
-      "related_moods": ["calm", "dreamy"]
+      "related_moods": ["calm", "peaceful", "dreamy"]
     },
     "dark_ambient": {
       "parent": "ambient",
       "children": [],
-      "related_moods": ["dark", "calm"]
+      "related_moods": ["dark", "ominous", "mysterious"]
     },
+
+    "hip_hop": {
+      "parent": null,
+      "children": ["rap", "trap", "lo_fi"],
+      "related_moods": ["rebellious", "energetic", "calm"]
+    },
+    "rap": {
+      "parent": "hip_hop",
+      "children": [],
+      "related_moods": ["rebellious", "aggressive", "intense"]
+    },
+    "trap": {
+      "parent": "hip_hop",
+      "children": [],
+      "related_moods": ["dark", "aggressive", "energetic"]
+    },
+    "lo_fi": {
+      "parent": "hip_hop",
+      "children": [],
+      "related_moods": ["calm", "melancholic", "relaxing"]
+    },
+
+    "folk": {
+      "parent": null,
+      "children": ["russian_folk", "celtic_folk"],
+      "related_moods": ["nostalgic", "melancholic", "epic"]
+    },
+    "russian_folk": {
+      "parent": "folk",
+      "children": [],
+      "related_moods": ["melancholic", "nostalgic", "epic"]
+    },
+    "celtic_folk": {
+      "parent": "folk",
+      "children": [],
+      "related_moods": ["nostalgic", "epic", "cheerful"]
+    },
+
+    "world": {
+      "parent": null,
+      "children": ["reggae", "latin"],
+      "related_moods": ["cheerful", "energetic", "peaceful"]
+    },
+    "reggae": {
+      "parent": "world",
+      "children": [],
+      "related_moods": ["peaceful", "cheerful", "relaxing"]
+    },
+    "latin": {
+      "parent": "world",
+      "children": [],
+      "related_moods": ["energetic", "cheerful", "romantic"]
+    },
+
+    "jazz": {
+      "parent": null,
+      "children": ["smooth_jazz"],
+      "related_moods": ["calm", "romantic", "relaxing"]
+    },
+    "smooth_jazz": {
+      "parent": "jazz",
+      "children": [],
+      "related_moods": ["calm", "romantic", "relaxing"]
+    },
+
+    "blues": {
+      "parent": null,
+      "children": [],
+      "related_moods": ["melancholic", "sad", "heartbroken"]
+    },
+
+    "classical": {
+      "parent": null,
+      "children": ["orchestral", "piano_classical"],
+      "related_moods": ["epic", "romantic", "meditative"]
+    },
+    "orchestral": {
+      "parent": "classical",
+      "children": [],
+      "related_moods": ["epic", "cinematic", "intense"]
+    },
+    "piano_classical": {
+      "parent": "classical",
+      "children": [],
+      "related_moods": ["melancholic", "peaceful", "romantic"]
+    },
+
+    "soundtrack": {
+      "parent": null,
+      "children": ["cinematic"],
+      "related_moods": ["epic", "intense", "mysterious"]
+    },
+    "cinematic": {
+      "parent": "soundtrack",
+      "children": [],
+      "related_moods": ["epic", "intense", "mysterious"]
+    },
+
     "ballad": {
       "parent": null,
       "children": [],
-      "related_moods": ["sad", "melancholic", "lonely"]
+      "related_moods": ["melancholic", "heartbroken", "lonely"]
     }
   },
 
   "moods": {
     "happy": {
       "parent": null,
-      "children": ["energetic", "uplifting"],
-      "related_genres": ["pop", "synthpop"]
+      "children": ["energetic", "uplifting", "cheerful", "euphoric"],
+      "related_genres": ["pop", "dance_pop", "k_pop", "j_pop"]
     },
     "energetic": {
       "parent": "happy",
       "children": [],
-      "related_genres": ["rock", "punk_rock", "hard_rock", "nu_metal"]
+      "related_genres": ["rock", "punk_rock", "dance_pop", "edm", "hip_hop"]
     },
     "uplifting": {
       "parent": "happy",
       "children": [],
-      "related_genres": ["pop", "synthpop"]
+      "related_genres": ["pop", "edm", "synthpop"]
     },
+    "cheerful": {
+      "parent": "happy",
+      "children": [],
+      "related_genres": ["pop_punk", "k_pop", "chiptune", "reggae"]
+    },
+    "euphoric": {
+      "parent": "happy",
+      "children": [],
+      "related_genres": ["dance_pop", "house", "trance", "edm"]
+    },
+
     "sad": {
       "parent": null,
-      "children": ["melancholic", "lonely"],
-      "related_genres": ["ballad", "indie_pop"]
+      "children": ["melancholic", "lonely", "nostalgic", "heartbroken", "gloomy"],
+      "related_genres": ["ballad", "blues", "lo_fi"]
     },
     "melancholic": {
       "parent": "sad",
       "children": [],
-      "related_genres": ["ballad", "indie_pop"]
+      "related_genres": ["indie_pop", "grunge", "lo_fi", "ballad"]
     },
     "lonely": {
       "parent": "sad",
       "children": [],
-      "related_genres": ["ballad"]
+      "related_genres": ["ballad", "indie_rock"]
     },
+    "nostalgic": {
+      "parent": "sad",
+      "children": [],
+      "related_genres": ["indie_rock", "russian_folk", "celtic_folk"]
+    },
+    "heartbroken": {
+      "parent": "sad",
+      "children": [],
+      "related_genres": ["ballad", "blues"]
+    },
+    "gloomy": {
+      "parent": "sad",
+      "children": [],
+      "related_genres": ["grunge", "dark_ambient"]
+    },
+
     "aggressive": {
       "parent": null,
-      "children": [],
-      "related_genres": ["punk_rock", "hard_rock", "nu_metal", "alternative_metal"]
+      "children": ["angry", "intense", "dark", "rebellious"],
+      "related_genres": ["punk_rock", "heavy_metal", "hardcore_punk"]
     },
-    "calm": {
-      "parent": null,
+    "angry": {
+      "parent": "aggressive",
       "children": [],
-      "related_genres": ["ambient", "dark_ambient"]
+      "related_genres": ["hardcore_punk", "thrash_metal", "rap"]
     },
-    "dreamy": {
-      "parent": null,
+    "intense": {
+      "parent": "aggressive",
       "children": [],
-      "related_genres": ["ambient", "synthpop", "indie_pop"]
+      "related_genres": ["heavy_metal", "techno", "cinematic"]
     },
     "dark": {
-      "parent": null,
+      "parent": "aggressive",
       "children": [],
-      "related_genres": ["dark_ambient", "alternative_metal", "nu_metal"]
+      "related_genres": ["dark_ambient", "black_metal", "trap", "grunge"]
     },
     "rebellious": {
-      "parent": null,
+      "parent": "aggressive",
       "children": [],
-      "related_genres": ["punk_rock"]
+      "related_genres": ["punk_rock", "rap", "grunge", "hard_rock"]
+    },
+
+    "calm": {
+      "parent": null,
+      "children": ["peaceful", "dreamy", "relaxing", "meditative"],
+      "related_genres": ["ambient", "lo_fi", "smooth_jazz", "piano_classical"]
+    },
+    "peaceful": {
+      "parent": "calm",
+      "children": [],
+      "related_genres": ["ambient", "reggae"]
+    },
+    "dreamy": {
+      "parent": "calm",
+      "children": [],
+      "related_genres": ["synthpop", "j_pop", "trance", "ambient"]
+    },
+    "relaxing": {
+      "parent": "calm",
+      "children": [],
+      "related_genres": ["lo_fi", "smooth_jazz", "ambient"]
+    },
+    "meditative": {
+      "parent": "calm",
+      "children": [],
+      "related_genres": ["ambient", "techno", "progressive_rock"]
+    },
+
+    "romantic": {
+      "parent": null,
+      "children": ["sensual"],
+      "related_genres": ["r_and_b", "smooth_jazz", "piano_classical"]
+    },
+    "sensual": {
+      "parent": "romantic",
+      "children": [],
+      "related_genres": ["r_and_b"]
+    },
+
+    "epic": {
+      "parent": null,
+      "children": ["cinematic"],
+      "related_genres": ["orchestral", "progressive_rock", "soundtrack"]
+    },
+    "cinematic": {
+      "parent": "epic",
+      "children": [],
+      "related_genres": ["orchestral", "soundtrack"]
+    },
+
+    "playful": {
+      "parent": null,
+      "children": ["quirky"],
+      "related_genres": ["chiptune", "k_pop", "j_pop"]
+    },
+    "quirky": {
+      "parent": "playful",
+      "children": [],
+      "related_genres": ["chiptune"]
+    },
+
+    "mysterious": {
+      "parent": null,
+      "children": ["ominous"],
+      "related_genres": ["dark_ambient", "progressive_rock", "black_metal"]
+    },
+    "ominous": {
+      "parent": "mysterious",
+      "children": [],
+      "related_genres": ["dark_ambient", "black_metal"]
     }
   },
 
   "keywords": {
     "rock": ["rock", "рок"],
     "punk_rock": ["punk", "панк", "punk rock", "панк-рок"],
-    "alternative_metal": ["alternative metal", "альтернативный метал"],
-    "nu_metal": ["nu metal", "nu-metal", "ню-метал", "new metal"],
-    "hard_rock": ["hard rock", "хард-рок"],
-    "pop": ["pop", "поп"],
-    "synthpop": ["synthpop", "synth pop", "синти-поп"],
-    "indie_pop": ["indie", "indie pop", "инди"],
+    "horror_punk": ["horror punk", "хоррор-панк", "хоррор панк"],
+    "pop_punk": ["pop punk", "поп-панк", "поп панк"],
+    "hardcore_punk": ["hardcore", "хардкор", "hardcore punk"],
+    "alternative_metal": ["alternative metal", "альтернативный метал", "альтернатива"],
+    "nu_metal": ["nu metal", "nu-metal", "ню-метал", "new metal", "ню метал"],
+    "metalcore": ["metalcore", "металкор"],
+    "hard_rock": ["hard rock", "хард-рок", "хард рок"],
+    "heavy_metal": ["heavy metal", "хэви-метал", "хэви метал"],
+    "thrash_metal": ["thrash", "трэш", "thrash metal", "трэш-метал"],
+    "death_metal": ["death metal", "дэт-метал", "дэт метал"],
+    "black_metal": ["black metal", "блэк-метал", "блэк метал"],
+    "grunge": ["grunge", "гранж"],
+    "indie_rock": ["indie rock", "инди-рок", "инди рок"],
+    "progressive_rock": ["progressive rock", "prog rock", "прогрессив-рок", "прог-рок"],
+
+    "pop": ["pop", "поп", "попса"],
+    "synthpop": ["synthpop", "synth pop", "синти-поп", "синти поп"],
+    "indie_pop": ["indie", "indie pop", "инди", "инди-поп"],
+    "dance_pop": ["dance pop", "данс-поп", "танцевальная попса"],
+    "k_pop": ["k-pop", "kpop", "кей-поп", "корейская попса"],
+    "j_pop": ["j-pop", "jpop", "джей-поп", "японская попса"],
+    "r_and_b": ["r&b", "rnb", "r and b", "ритм-н-блюз"],
+
+    "electronic": ["electronic", "электроника", "электронная музыка"],
+    "techno": ["techno", "техно"],
+    "house": ["house", "хаус", "house music"],
+    "trance": ["trance", "транс"],
+    "dubstep": ["dubstep", "дабстеп"],
+    "drum_and_bass": ["drum and bass", "dnb", "d&b", "драм-н-бейс"],
+    "chiptune": ["chiptune", "chip tune", "чиптюн", "8-bit"],
+    "edm": ["edm", "эдм"],
     "ambient": ["ambient", "эмбиент", "атмосферная"],
-    "dark_ambient": ["dark ambient", "тёмный эмбиент"],
+    "dark_ambient": ["dark ambient", "тёмный эмбиент", "дарк эмбиент"],
+
+    "hip_hop": ["hip hop", "hip-hop", "хип-хоп", "хип хоп"],
+    "rap": ["rap", "рэп", "rapper"],
+    "trap": ["trap", "трэп"],
+    "lo_fi": ["lo-fi", "lo fi", "lofi", "лоу-фай", "лоуфай"],
+
+    "folk": ["folk", "фолк", "фолк-музыка"],
+    "russian_folk": ["russian folk", "русский фолк", "русская народная"],
+    "celtic_folk": ["celtic", "кельтская", "кельтский фолк"],
+
+    "world": ["world music", "этника", "этническая"],
+    "reggae": ["reggae", "регги"],
+    "latin": ["latin", "латина", "латиноамериканская"],
+
+    "jazz": ["jazz", "джаз"],
+    "smooth_jazz": ["smooth jazz", "смус-джаз", "спокойный джаз"],
+    "blues": ["blues", "блюз"],
+
+    "classical": ["classical", "классика", "классическая"],
+    "orchestral": ["orchestral", "оркестр", "симфоническая"],
+    "piano_classical": ["piano classical", "фортепианная классика", "пианино"],
+
+    "soundtrack": ["soundtrack", "саундтрек", "ost"],
+    "cinematic": ["cinematic", "кино", "кинематографичная"],
+
     "ballad": ["ballad", "баллада", "баллады"],
 
     "happy": ["happy", "весёлый", "веселая", "весёлая", "joyful", "радостный"],
     "energetic": ["energetic", "энергичный", "бодрый", "быстрый", "энергичная"],
     "uplifting": ["uplifting", "воодушевляющий", "поднимающий"],
-    "sad": ["sad", "грустный", "грустная", "печальный", "sad song"],
+    "cheerful": ["cheerful", "бодрый", "жизнерадостный", "яркий"],
+    "euphoric": ["euphoric", "эйфоричный", "кайфовый"],
+
+    "sad": ["sad", "грустный", "грустная", "печальный"],
     "melancholic": ["melancholic", "меланхоличный", "меланхолия", "тоскливый"],
     "lonely": ["lonely", "одинокий", "одинокая"],
-    "aggressive": ["aggressive", "агрессивный", "злой", "тяжёлый", "тяжелая", "метал"],
-    "calm": ["calm", "спокойный", "спокойная", "тихий", "тихая"],
-    "dreamy": ["dreamy", "мечтательный", "воздушный"],
+    "nostalgic": ["nostalgic", "ностальгический", "ностальгия"],
+    "heartbroken": ["heartbroken", "разбитое сердце", "разбитый"],
+    "gloomy": ["gloomy", "мрачноватый", "угрюмый"],
+
+    "aggressive": ["aggressive", "агрессивный", "злой"],
+    "angry": ["angry", "сердитый", "злой"],
+    "intense": ["intense", "интенсивный", "мощный", "сильный"],
     "dark": ["dark", "тёмный", "мрачный", "dark mood"],
-    "rebellious": ["rebellious", "бунтарский", "протестный"]
+    "rebellious": ["rebellious", "бунтарский", "протестный"],
+
+    "calm": ["calm", "спокойный", "спокойная", "тихий", "тихая"],
+    "peaceful": ["peaceful", "мирный", "умиротворённый", "умиротворяющий"],
+    "dreamy": ["dreamy", "мечтательный", "воздушный"],
+    "relaxing": ["relaxing", "расслабляющий", "для релакса"],
+    "meditative": ["meditative", "медитативный", "для медитации"],
+
+    "romantic": ["romantic", "романтический", "романтика"],
+    "sensual": ["sensual", "чувственный", "эротичный"],
+
+    "epic": ["epic", "эпичный", "эпический", "масштабный"],
+    "cinematic": ["cinematic", "кинематографичный", "как в кино"],
+
+    "playful": ["playful", "игривый", "шаловливый"],
+    "quirky": ["quirky", "чудной", "необычный", "странный"],
+
+    "mysterious": ["mysterious", "загадочный", "таинственный"],
+    "ominous": ["ominous", "зловещий", "пугающий", "мрачный"]
   },
 
   "prompts": {
     "genres": {
-      "rock": "rock music with electric guitars and drums",
-      "punk_rock": "fast aggressive punk rock music",
-      "alternative_metal": "alternative metal music, heavy guitars",
-      "nu_metal": "nu metal music with heavy downtuned guitars",
-      "hard_rock": "classic hard rock music",
-      "pop": "popular pop music, catchy melody",
-      "synthpop": "synthesizer pop music, electronic beats",
-      "indie_pop": "indie pop music, soft vocals",
-      "ambient": "calm ambient music without vocals",
-      "dark_ambient": "dark ambient atmospheric music",
-      "ballad": "slow sad ballad with emotional vocals"
+      "rock": "rock band with electric guitars, bass guitar, acoustic drums, energetic rhythm",
+      "pop": "vocal pop song with catchy chorus, clear singing, polished production",
+      "electronic": "instrumental electronic music, synthesizers, drum machines, no acoustic instruments",
+      "hip_hop": "rap vocals over urban rhythm, spoken word flow, sub bass",
+      "folk": "acoustic folk song with guitar, storytelling, traditional instruments",
+      "world": "world music with ethnic percussion, traditional instruments, non-western scales",
+      "jazz": "jazz ensemble with saxophone, piano, double bass, improvised solos",
+      "blues": "blues song with electric guitar, harmonica, emotional singing",
+      "classical": "classical orchestra with strings, woodwinds, piano, symphonic sound",
+      "soundtrack": "film soundtrack with orchestral instruments, cinematic atmosphere",
+      "ballad": "slow ballad with piano, soft vocals, emotional melody"
+    },
+    "subgenres": {
+      "punk_rock": "fast punk rock with distorted electric guitars, aggressive drums, raw energy, short song",
+      "alternative_metal": "alternative metal with heavy distorted guitars, dynamic shifts, melodic or aggressive",
+      "hard_rock": "hard rock with distorted electric guitars, strong backbeat, powerful riffs",
+      "heavy_metal": "traditional heavy metal with twin guitar leads, pounding drums, powerful riffs, intense",
+      "grunge": "grunge with distorted guitars, raw production, angsty atmosphere, 90s sound",
+      "indie_rock": "indie rock with jangly guitars, understated vocals, alternative atmosphere",
+      "progressive_rock": "progressive rock with complex song structure, long instrumental passages, varied dynamics",
+
+      "synthpop": "synthpop with synthesizer lead, electronic drums, bright melody, catchy hook",
+      "indie_pop": "indie pop with soft vocals, light instrumentation, dreamy atmosphere",
+      "dance_pop": "dance pop with upbeat tempo, four on the floor, danceable rhythm, catchy hook",
+      "k_pop": "k-pop with polished production, bright vocals, pop melody, choreographed pop sound",
+      "j_pop": "j-pop with bright melodies, energetic vocals, pop arrangement, upbeat",
+      "r_and_b": "r&b with smooth vocals, groovy beat, soulful melody, slow tempo",
+
+      "techno": "techno with repetitive four on the floor beat, synthesizers, minimal, driving",
+      "house": "house music with four on the floor beat, warm bassline, groove, dancefloor",
+      "trance": "trance with melodic synthesizers, build-ups, energetic beat, euphoric",
+      "dubstep": "dubstep with wobble bass, heavy drops, half-time drums, electronic",
+      "drum_and_bass": "drum and bass with fast breakbeats, sub bass, energetic, 170 BPM",
+      "chiptune": "chiptune with 8-bit square waves, video game music, simple melody, retro",
+      "edm": "EDM with festival build-ups, massive drop, synthesizers, energetic",
+      "ambient": "ambient music with atmospheric pads, drones, no beat, calm, meditative",
+
+      "rap": "rap with spoken word flow, hip hop beat, rhythmic delivery, urban",
+      "trap": "trap music with hi-hats rolls, 808 sub bass, dark atmosphere, slow tempo",
+      "lo_fi": "lo-fi hip hop with mellow beats, vinyl crackle, relaxed atmosphere, jazzy samples",
+
+      "russian_folk": "russian folk with balalaika, traditional melodies, acoustic instruments, folk singing",
+      "celtic_folk": "celtic music with fiddle, tin whistle, traditional melodies, jig rhythm",
+
+      "reggae": "reggae with offbeat rhythm, laid-back groove, bass line, skank guitar",
+      "latin": "latin music with salsa rhythm, spanish guitars, percussion, tropical feel",
+
+      "smooth_jazz": "smooth jazz with soft saxophone, easy listening, relaxed groove, light drums",
+
+      "orchestral": "orchestral music with symphony strings, brass, timpani, cinematic sound",
+      "piano_classical": "solo classical piano, gentle melody, refined performance, no other instruments",
+
+      "cinematic": "cinematic music with epic film score, orchestral instruments, dramatic build-up"
     },
     "moods": {
-      "happy": "happy joyful music",
-      "energetic": "energetic fast tempo music",
-      "uplifting": "uplifting inspiring music",
-      "sad": "sad melancholic music",
-      "melancholic": "melancholic melancholic music",
-      "lonely": "lonely sad music",
-      "aggressive": "aggressive heavy intense music",
-      "calm": "calm quiet relaxing music",
-      "dreamy": "dreamy atmospheric ethereal music",
-      "dark": "dark moody ominous music",
-      "rebellious": "rebellious protest music"
+      "happy": "happy, joyful music",
+      "energetic": "energetic, fast tempo, exciting",
+      "uplifting": "uplifting, inspiring, positive",
+      "cheerful": "cheerful, bright, sunny",
+      "euphoric": "euphoric, blissful, ecstatic",
+
+      "sad": "sad, sorrowful music",
+      "melancholic": "melancholic, wistful, reflective",
+      "lonely": "lonely, solitary, isolated",
+      "nostalgic": "nostalgic, sentimental, memories",
+      "heartbroken": "heartbroken, emotional pain",
+      "gloomy": "gloomy, dim, brooding",
+
+      "aggressive": "aggressive, forceful, intense",
+      "angry": "angry, furious, hostile",
+      "intense": "intense, powerful, driving",
+      "dark": "dark, moody, ominous",
+      "rebellious": "rebellious, defiant, protest",
+
+      "calm": "calm, quiet, peaceful",
+      "peaceful": "peaceful, serene, tranquil",
+      "dreamy": "dreamy, ethereal, floating",
+      "relaxing": "relaxing, soothing, easy",
+      "meditative": "meditative, contemplative, slow",
+
+      "romantic": "romantic, loving, tender",
+      "sensual": "sensual, intimate, smooth",
+
+      "epic": "epic, grand, cinematic",
+      "cinematic": "cinematic, film-like, dramatic",
+
+      "playful": "playful, fun, lighthearted",
+      "quirky": "quirky, odd, whimsical",
+
+      "mysterious": "mysterious, enigmatic, eerie",
+      "ominous": "ominous, threatening, foreboding"
     }
+  },
+
+  "content_types": {
+    "music": "music, song, instrumental music",
+    "speech": "speech, person talking, podcast, voice",
+    "singing": "singing voice, a cappella singing",
+    "animal": "animal sounds, dog barking, cat, birds",
+    "nature": "nature sounds, rain, wind, water",
+    "sound_effect": "sound effect, alarm, mechanical noise",
+    "noise": "unstructured noise, static, garbage audio",
+    "silence": "silence, quiet, no sound"
   }
 }

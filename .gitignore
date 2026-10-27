@@ -1,4 +1,4 @@
-# --- Python ---
+# Python
 __pycache__/
 *.py[cod]
 *.egg-info/
@@ -6,40 +6,36 @@ __pycache__/
 venv/
 env/
 
-# --- Модели (весят много, качаются автоматически) ---
+# Модели (скачиваются автоматически)
 models/*
 !models/.gitkeep
 
-# --- Данные пользователя (личная аудиотека) ---
-# --- Данные пользователя (личная аудиотека) ---
+# Пользовательская аудиотека
 data/tracks/
 !data/tracks/.gitkeep
 
-# --- Индексы (генерируются автоматически) ---
+# Индексы (пересоздаются автоматически)
 data/indexes/
 !data/indexes/.gitkeep
-
-# --- Индекс (генерируется автоматически, восстанавливается индексацией) ---
 data/library.audio.faiss
 data/library.text.faiss
 data/library.tracks
 
-# --- Результаты экспериментов ---
+# Промежуточные результаты Demucs
 experiments/separated/
-experiments/results/
 
-# --- IDE ---
-.vscode/
-.idea/
-
-# --- OS ---
-.DS_Store
-Thumbs.db
-
-plan.txt
-
-# --- Обложки (извлекаются из аудиофайлов) ---
+# Обложки
 data/covers/
 !data/covers/.gitkeep
 
-Z
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Личные заметки
+plan.txt
+
+# Local experiments/backups
+Z/

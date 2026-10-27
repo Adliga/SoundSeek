@@ -1,27 +1,35 @@
-import os
+"""Проверка Whisper на первом треке."""
+
+from __future__ import annotations
+
 import sys
+import time
 from pathlib import Path
+
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-os.environ["PATH"] = r"C:\Users\Adli\AppData\Local\Microsoft\WinGet\Packages\Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe\ffmpeg-9.0.2-full_build\bin" + os.pathsep + os.environ["PATH"]
 
 import whisper
-import time
-import warnings
-warnings.filterwarnings("ignore")
 
-MODEL_SIZE = "base"
-TEST_FILE = "data/ぼくらはみんな意味不明 (nu metal Remix) - PinocchioP.mp3"
+from check_scripts._common import first_audio
 
-print(f"Загрузка Whisper ({MODEL_SIZE})...")
-t0 = time.time()
-model = whisper.load_model(MODEL_SIZE)
-print(f"  Загрузка: {time.time() - t0:.1f} сек")
 
-print(f"\nРаспознавание: {Path(TEST_FILE).name}")
-t0 = time.time()
-result = model.transcribe(TEST_FILE, language=None)  # language=None → автоопределение
-print(f"  Время: {time.time() - t0:.1f} сек")
+def main() -> None:
+    source = first_audio()
+    start = time.time()
+    model = whisper.load_model("base")
+    print(f"Модель загружена за {time.time() - start:.1f} с")
+    start = time.time()
+    result = model.transcribe(
+        str(source),
+        language=None,
+        fp16=False,
+        condition_on_previous_text=False,
+        temperature=0.0,
+    )
+    print(f"Распознавание: {time.time() - start:.1f} с")
+    print(f"Язык: {result.get('language')}")
+    print(result.get("text", "").strip()[:1500])
 
-print(f"  Определённый язык: {result['language']}")
-print(f"\n  Распознанный текст:")
-print(f"  {result['text'].strip()}")
+
+if __name__ == "__main__":
+    main()

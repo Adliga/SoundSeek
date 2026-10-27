@@ -1,0 +1,797 @@
+{
+  "cases": [
+    {
+      "mode": "metadata",
+      "cases": [
+        {
+          "query": "lonely day",
+          "description": "точное название",
+          "expected": [
+            "91f624b27b77"
+          ],
+          "returned": [
+            "lonely day"
+          ],
+          "ranks": [
+            1
+          ],
+          "precision@3": 0.3333,
+          "recall@3": 1.0,
+          "mrr": 1.0
+        },
+        {
+          "query": "cigaro",
+          "description": "точное название",
+          "expected": [
+            "0060074da0be"
+          ],
+          "returned": [
+            "System Of A Down - Cigaro (Official Audio) - systemofadownVEVO"
+          ],
+          "ranks": [
+            1
+          ],
+          "precision@3": 0.3333,
+          "recall@3": 1.0,
+          "mrr": 1.0
+        },
+        {
+          "query": "new light",
+          "description": "точное название",
+          "expected": [
+            "87b0d97c1a46"
+          ],
+          "returned": [
+            "New Light - Dalby"
+          ],
+          "ranks": [
+            1
+          ],
+          "precision@3": 0.3333,
+          "recall@3": 1.0,
+          "mrr": 1.0
+        },
+        {
+          "query": "maanam",
+          "description": "исполнитель",
+          "expected": [
+            "c4323a9f9eb9"
+          ],
+          "returned": [
+            "Maanam - Raz - dwa, raz - dwa (Film muzyczny Night Patrol) - Maanam"
+          ],
+          "ranks": [
+            1
+          ],
+          "precision@3": 0.3333,
+          "recall@3": 1.0,
+          "mrr": 1.0
+        },
+        {
+          "query": "король и шут",
+          "description": "исполнитель, кириллица",
+          "expected": [
+            "a858ed1778a8",
+            "bdfe8ff26965"
+          ],
+          "returned": [
+            "Бал лицемеров",
+            "Театральный демон"
+          ],
+          "ranks": [
+            1,
+            2
+          ],
+          "precision@3": 0.6667,
+          "recall@3": 1.0,
+          "mrr": 1.0
+        },
+        {
+          "query": "piano",
+          "description": "описание звучания",
+          "expected": [
+            "87b0d97c1a46"
+          ],
+          "returned": [],
+          "ranks": [],
+          "precision@3": 0.0,
+          "recall@3": 0.0,
+          "mrr": 0.0
+        },
+        {
+          "query": "весёлый панк",
+          "description": "жанр + настроение",
+          "expected": [
+            "a858ed1778a8",
+            "bdfe8ff26965"
+          ],
+          "returned": [],
+          "ranks": [],
+          "precision@3": 0.0,
+          "recall@3": 0.0,
+          "mrr": 0.0
+        },
+        {
+          "query": "рок, но не панк",
+          "description": "отрицание",
+          "expected": [
+            "0060074da0be",
+            "0f6b7de08115",
+            "41a8b60361e1",
+            "43c4f47386ab",
+            "45e6979e2bd8",
+            "52b02aa96932",
+            "576557f9d6f1",
+            "5bca4d7b9f7b",
+            "6ebb528e8afc",
+            "80576ff709f1",
+            "87b0d97c1a46",
+            "8ea8c1210af4",
+            "91f624b27b77",
+            "b863763b89cb",
+            "bb66d74059e3",
+            "c4323a9f9eb9"
+          ],
+          "returned": [],
+          "ranks": [],
+          "precision@3": 0.0,
+          "recall@3": 0.0,
+          "mrr": 0.0
+        },
+        {
+          "query": "trap",
+          "description": "близкий поджанр",
+          "expected": [
+            "0f6b7de08115"
+          ],
+          "returned": [],
+          "ranks": [],
+          "precision@3": 0.0,
+          "recall@3": 0.0,
+          "mrr": 0.0
+        },
+        {
+          "query": "2010-е",
+          "description": "десятилетие",
+          "expected": [
+            "a858ed1778a8",
+            "bdfe8ff26965"
+          ],
+          "returned": [],
+          "ranks": [],
+          "precision@3": 0.0,
+          "recall@3": 0.0,
+          "mrr": 0.0
+        },
+        {
+          "query": "с вокалом",
+          "description": "фильтр вокала",
+          "expected": [
+            "52b02aa96932",
+            "6a94673594d0",
+            "91f624b27b77",
+            "bdfe8ff26965",
+            "c99ea4fa4882"
+          ],
+          "returned": [],
+          "ranks": [],
+          "precision@3": 0.0,
+          "recall@3": 0.0,
+          "mrr": 0.0
+        }
+      ]
+    },
+    {
+      "mode": "clap",
+      "cases": [
+        {
+          "query": "lonely day",
+          "description": "точное название",
+          "expected": [
+            "91f624b27b77"
+          ],
+          "returned": [],
+          "ranks": [],
+          "precision@3": 0.0,
+          "recall@3": 0.0,
+          "mrr": 0.0
+        },
+        {
+          "query": "cigaro",
+          "description": "точное название",
+          "expected": [
+            "0060074da0be"
+          ],
+          "returned": [
+            "System Of A Down - Cigaro (Official Audio) - systemofadownVEVO",
+            "ぼくらはみんな意味不明 (nu metal Remix) - PinocchioP",
+            "Театральный демон"
+          ],
+          "ranks": [
+            1
+          ],
+          "precision@3": 0.3333,
+          "recall@3": 1.0,
+          "mrr": 1.0
+        },
+        {
+          "query": "new light",
+          "description": "точное название",
+          "expected": [
+            "87b0d97c1a46"
+          ],
+          "returned": [
+            "Ms. Miku After Dark - Astrophysics",
+            "freedom-motif",
+            "𝙏𝙖𝙠𝙚 𝙊𝙣 𝙈𝙞𝙠𝙪 - Astrophysics"
+          ],
+          "ranks": [],
+          "precision@3": 0.0,
+          "recall@3": 0.0,
+          "mrr": 0.0
+        },
+        {
+          "query": "maanam",
+          "description": "исполнитель",
+          "expected": [
+            "c4323a9f9eb9"
+          ],
+          "returned": [
+            "Ms. Miku After Dark - Astrophysics",
+            "IMAGE_FRIEND laugh [Deltarune Chapter 3/4]",
+            "𝙏𝙖𝙠𝙚 𝙊𝙣 𝙈𝙞𝙠𝙪 - Astrophysics"
+          ],
+          "ranks": [],
+          "precision@3": 0.0,
+          "recall@3": 0.0,
+          "mrr": 0.0
+        },
+        {
+          "query": "король и шут",
+          "description": "исполнитель, кириллица",
+          "expected": [
+            "a858ed1778a8",
+            "bdfe8ff26965"
+          ],
+          "returned": [
+            "Театральный демон",
+            "Бал лицемеров",
+            "Deltarune Chapter 5 - All Flowery Voice Clips [ENGLISH] [EXTENDED]"
+          ],
+          "ranks": [
+            1,
+            2
+          ],
+          "precision@3": 0.6667,
+          "recall@3": 1.0,
+          "mrr": 1.0
+        },
+        {
+          "query": "piano",
+          "description": "описание звучания",
+          "expected": [
+            "87b0d97c1a46"
+          ],
+          "returned": [
+            "New Light - Dalby"
+          ],
+          "ranks": [
+            1
+          ],
+          "precision@3": 0.3333,
+          "recall@3": 1.0,
+          "mrr": 1.0
+        },
+        {
+          "query": "весёлый панк",
+          "description": "жанр + настроение",
+          "expected": [
+            "a858ed1778a8",
+            "bdfe8ff26965"
+          ],
+          "returned": [
+            "Театральный демон",
+            "Бал лицемеров"
+          ],
+          "ranks": [
+            1,
+            2
+          ],
+          "precision@3": 0.6667,
+          "recall@3": 1.0,
+          "mrr": 1.0
+        },
+        {
+          "query": "рок, но не панк",
+          "description": "отрицание",
+          "expected": [
+            "0060074da0be",
+            "0f6b7de08115",
+            "41a8b60361e1",
+            "43c4f47386ab",
+            "45e6979e2bd8",
+            "52b02aa96932",
+            "576557f9d6f1",
+            "5bca4d7b9f7b",
+            "6ebb528e8afc",
+            "80576ff709f1",
+            "87b0d97c1a46",
+            "8ea8c1210af4",
+            "91f624b27b77",
+            "b863763b89cb",
+            "bb66d74059e3",
+            "c4323a9f9eb9"
+          ],
+          "returned": [
+            "korol i shut",
+            "System Of A Down - Cigaro (Official Audio) - systemofadownVEVO",
+            "lonely day"
+          ],
+          "ranks": [
+            1,
+            2,
+            3
+          ],
+          "precision@3": 1.0,
+          "recall@3": 0.1875,
+          "mrr": 1.0
+        },
+        {
+          "query": "trap",
+          "description": "близкий поджанр",
+          "expected": [
+            "0f6b7de08115"
+          ],
+          "returned": [
+            "Grzyby Na Marsie - ETNOBOTANIKA"
+          ],
+          "ranks": [
+            1
+          ],
+          "precision@3": 0.3333,
+          "recall@3": 1.0,
+          "mrr": 1.0
+        },
+        {
+          "query": "2010-е",
+          "description": "десятилетие",
+          "expected": [
+            "a858ed1778a8",
+            "bdfe8ff26965"
+          ],
+          "returned": [],
+          "ranks": [],
+          "precision@3": 0.0,
+          "recall@3": 0.0,
+          "mrr": 0.0
+        },
+        {
+          "query": "с вокалом",
+          "description": "фильтр вокала",
+          "expected": [
+            "52b02aa96932",
+            "6a94673594d0",
+            "91f624b27b77",
+            "bdfe8ff26965",
+            "c99ea4fa4882"
+          ],
+          "returned": [
+            "pirate-gaster Jzylxv4",
+            "Театральный демон",
+            "lonely day"
+          ],
+          "ranks": [
+            1,
+            2,
+            3
+          ],
+          "precision@3": 1.0,
+          "recall@3": 0.6,
+          "mrr": 1.0
+        }
+      ]
+    },
+    {
+      "mode": "lyrics",
+      "cases": [
+        {
+          "query": "lonely day",
+          "description": "точное название",
+          "expected": [
+            "91f624b27b77"
+          ],
+          "returned": [
+            "lonely day"
+          ],
+          "ranks": [
+            1
+          ],
+          "precision@3": 0.3333,
+          "recall@3": 1.0,
+          "mrr": 1.0
+        },
+        {
+          "query": "cigaro",
+          "description": "точное название",
+          "expected": [
+            "0060074da0be"
+          ],
+          "returned": [],
+          "ranks": [],
+          "precision@3": 0.0,
+          "recall@3": 0.0,
+          "mrr": 0.0
+        },
+        {
+          "query": "new light",
+          "description": "точное название",
+          "expected": [
+            "87b0d97c1a46"
+          ],
+          "returned": [],
+          "ranks": [],
+          "precision@3": 0.0,
+          "recall@3": 0.0,
+          "mrr": 0.0
+        },
+        {
+          "query": "maanam",
+          "description": "исполнитель",
+          "expected": [
+            "c4323a9f9eb9"
+          ],
+          "returned": [],
+          "ranks": [],
+          "precision@3": 0.0,
+          "recall@3": 0.0,
+          "mrr": 0.0
+        },
+        {
+          "query": "король и шут",
+          "description": "исполнитель, кириллица",
+          "expected": [
+            "a858ed1778a8",
+            "bdfe8ff26965"
+          ],
+          "returned": [],
+          "ranks": [],
+          "precision@3": 0.0,
+          "recall@3": 0.0,
+          "mrr": 0.0
+        },
+        {
+          "query": "piano",
+          "description": "описание звучания",
+          "expected": [
+            "87b0d97c1a46"
+          ],
+          "returned": [],
+          "ranks": [],
+          "precision@3": 0.0,
+          "recall@3": 0.0,
+          "mrr": 0.0
+        },
+        {
+          "query": "весёлый панк",
+          "description": "жанр + настроение",
+          "expected": [
+            "a858ed1778a8",
+            "bdfe8ff26965"
+          ],
+          "returned": [],
+          "ranks": [],
+          "precision@3": 0.0,
+          "recall@3": 0.0,
+          "mrr": 0.0
+        },
+        {
+          "query": "рок, но не панк",
+          "description": "отрицание",
+          "expected": [
+            "0060074da0be",
+            "0f6b7de08115",
+            "41a8b60361e1",
+            "43c4f47386ab",
+            "45e6979e2bd8",
+            "52b02aa96932",
+            "576557f9d6f1",
+            "5bca4d7b9f7b",
+            "6ebb528e8afc",
+            "80576ff709f1",
+            "87b0d97c1a46",
+            "8ea8c1210af4",
+            "91f624b27b77",
+            "b863763b89cb",
+            "bb66d74059e3",
+            "c4323a9f9eb9"
+          ],
+          "returned": [],
+          "ranks": [],
+          "precision@3": 0.0,
+          "recall@3": 0.0,
+          "mrr": 0.0
+        },
+        {
+          "query": "trap",
+          "description": "близкий поджанр",
+          "expected": [
+            "0f6b7de08115"
+          ],
+          "returned": [],
+          "ranks": [],
+          "precision@3": 0.0,
+          "recall@3": 0.0,
+          "mrr": 0.0
+        },
+        {
+          "query": "2010-е",
+          "description": "десятилетие",
+          "expected": [
+            "a858ed1778a8",
+            "bdfe8ff26965"
+          ],
+          "returned": [],
+          "ranks": [],
+          "precision@3": 0.0,
+          "recall@3": 0.0,
+          "mrr": 0.0
+        },
+        {
+          "query": "с вокалом",
+          "description": "фильтр вокала",
+          "expected": [
+            "52b02aa96932",
+            "6a94673594d0",
+            "91f624b27b77",
+            "bdfe8ff26965",
+            "c99ea4fa4882"
+          ],
+          "returned": [],
+          "ranks": [],
+          "precision@3": 0.0,
+          "recall@3": 0.0,
+          "mrr": 0.0
+        }
+      ]
+    },
+    {
+      "mode": "full",
+      "cases": [
+        {
+          "query": "lonely day",
+          "description": "точное название",
+          "expected": [
+            "91f624b27b77"
+          ],
+          "returned": [
+            "lonely day"
+          ],
+          "ranks": [
+            1
+          ],
+          "precision@3": 0.3333,
+          "recall@3": 1.0,
+          "mrr": 1.0
+        },
+        {
+          "query": "cigaro",
+          "description": "точное название",
+          "expected": [
+            "0060074da0be"
+          ],
+          "returned": [
+            "System Of A Down - Cigaro (Official Audio) - systemofadownVEVO"
+          ],
+          "ranks": [
+            1
+          ],
+          "precision@3": 0.3333,
+          "recall@3": 1.0,
+          "mrr": 1.0
+        },
+        {
+          "query": "new light",
+          "description": "точное название",
+          "expected": [
+            "87b0d97c1a46"
+          ],
+          "returned": [
+            "New Light - Dalby"
+          ],
+          "ranks": [
+            1
+          ],
+          "precision@3": 0.3333,
+          "recall@3": 1.0,
+          "mrr": 1.0
+        },
+        {
+          "query": "maanam",
+          "description": "исполнитель",
+          "expected": [
+            "c4323a9f9eb9"
+          ],
+          "returned": [
+            "Maanam - Raz - dwa, raz - dwa (Film muzyczny Night Patrol) - Maanam"
+          ],
+          "ranks": [
+            1
+          ],
+          "precision@3": 0.3333,
+          "recall@3": 1.0,
+          "mrr": 1.0
+        },
+        {
+          "query": "король и шут",
+          "description": "исполнитель, кириллица",
+          "expected": [
+            "a858ed1778a8",
+            "bdfe8ff26965"
+          ],
+          "returned": [
+            "Театральный демон",
+            "Бал лицемеров"
+          ],
+          "ranks": [
+            1,
+            2
+          ],
+          "precision@3": 0.6667,
+          "recall@3": 1.0,
+          "mrr": 1.0
+        },
+        {
+          "query": "piano",
+          "description": "описание звучания",
+          "expected": [
+            "87b0d97c1a46"
+          ],
+          "returned": [
+            "New Light - Dalby"
+          ],
+          "ranks": [
+            1
+          ],
+          "precision@3": 0.3333,
+          "recall@3": 1.0,
+          "mrr": 1.0
+        },
+        {
+          "query": "весёлый панк",
+          "description": "жанр + настроение",
+          "expected": [
+            "a858ed1778a8",
+            "bdfe8ff26965"
+          ],
+          "returned": [
+            "Театральный демон",
+            "Бал лицемеров"
+          ],
+          "ranks": [
+            1,
+            2
+          ],
+          "precision@3": 0.6667,
+          "recall@3": 1.0,
+          "mrr": 1.0
+        },
+        {
+          "query": "рок, но не панк",
+          "description": "отрицание",
+          "expected": [
+            "0060074da0be",
+            "0f6b7de08115",
+            "41a8b60361e1",
+            "43c4f47386ab",
+            "45e6979e2bd8",
+            "52b02aa96932",
+            "576557f9d6f1",
+            "5bca4d7b9f7b",
+            "6ebb528e8afc",
+            "80576ff709f1",
+            "87b0d97c1a46",
+            "8ea8c1210af4",
+            "91f624b27b77",
+            "b863763b89cb",
+            "bb66d74059e3",
+            "c4323a9f9eb9"
+          ],
+          "returned": [
+            "korol i shut",
+            "System Of A Down - Cigaro (Official Audio) - systemofadownVEVO",
+            "lonely day"
+          ],
+          "ranks": [
+            1,
+            2,
+            3
+          ],
+          "precision@3": 1.0,
+          "recall@3": 0.1875,
+          "mrr": 1.0
+        },
+        {
+          "query": "trap",
+          "description": "близкий поджанр",
+          "expected": [
+            "0f6b7de08115"
+          ],
+          "returned": [
+            "Grzyby Na Marsie - ETNOBOTANIKA"
+          ],
+          "ranks": [
+            1
+          ],
+          "precision@3": 0.3333,
+          "recall@3": 1.0,
+          "mrr": 1.0
+        },
+        {
+          "query": "2010-е",
+          "description": "десятилетие",
+          "expected": [
+            "a858ed1778a8",
+            "bdfe8ff26965"
+          ],
+          "returned": [
+            "Театральный демон",
+            "Бал лицемеров"
+          ],
+          "ranks": [
+            1,
+            2
+          ],
+          "precision@3": 0.6667,
+          "recall@3": 1.0,
+          "mrr": 1.0
+        },
+        {
+          "query": "с вокалом",
+          "description": "фильтр вокала",
+          "expected": [
+            "52b02aa96932",
+            "6a94673594d0",
+            "91f624b27b77",
+            "bdfe8ff26965",
+            "c99ea4fa4882"
+          ],
+          "returned": [
+            "pirate-gaster Jzylxv4",
+            "Театральный демон",
+            "lonely day"
+          ],
+          "ranks": [
+            1,
+            2,
+            3
+          ],
+          "precision@3": 1.0,
+          "recall@3": 0.6,
+          "mrr": 1.0
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "metadata": {
+      "mean_precision@3": 0.1818,
+      "mean_recall@3": 0.4545,
+      "mean_mrr": 0.4545
+    },
+    "clap": {
+      "mean_precision@3": 0.3939,
+      "mean_recall@3": 0.5261,
+      "mean_mrr": 0.6364
+    },
+    "lyrics": {
+      "mean_precision@3": 0.0303,
+      "mean_recall@3": 0.0909,
+      "mean_mrr": 0.0909
+    },
+    "full": {
+      "mean_precision@3": 0.5454,
+      "mean_recall@3": 0.8898,
+      "mean_mrr": 1.0
+    }
+  }
+}

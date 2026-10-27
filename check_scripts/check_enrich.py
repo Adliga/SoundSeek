@@ -1,17 +1,19 @@
-import os
+"""Запуск тяжёлого обогащения для необработанных музыкальных треков."""
+
+from __future__ import annotations
+
 import sys
 from pathlib import Path
+
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-os.environ["HF_HUB_DISABLE_SYMLINKS_WARNING"] = "1"
-os.environ["DEMUCS_DEVICE"] = "cpu"
-
-from soundseek_core import AudioIndexer
+from check_scripts._common import load_indexer
 
 
-def main():
-    indexer = AudioIndexer(db_path="data/library")
-    indexer.enrich_with_lyrics()
+def main() -> None:
+    indexer = load_indexer()
+    total = indexer.enrich_with_lyrics()
+    print(f"Обработано треков: {total}")
 
 
 if __name__ == "__main__":

@@ -1,62 +1,35 @@
-# Нейросетевые модели
-transformers>=4.40.0
-
-torch>=2.2.0
-jiwer>=3.0.4 
-
-sentence-transformers>=2.7.0
-
-openai-whisper>=20231117
-
-# Векторный поиск
-faiss-cpu>=1.8.0
-
-# Аудио
-librosa>=0.10.1
-soundfile>=0.12.1
-sounddevice>=0.4.6
-
-# Интерфейс
-gradio>=4.30.0
-
-# Утилиты
-numpy>=1.26.0
-tqdm>=4.66.0
-
-
-mutagen>=1.48.1
-
-
-
-
-
-
-
+# SoundSeek: локальный стек CPU-only
+# Python 3.12, без облачных API.
 
 # Нейросетевые модели
-transformers>=4.40.0
 torch>=2.2.0
+transformers>=4.40.0
 sentence-transformers>=2.7.0
-accelerate>=0.30.0
-
-# Векторный поиск
-faiss-cpu>=1.8.0
-
-# Аудио
-librosa>=0.10.1
-soundfile>=0.12.1
-sounddevice>=0.4.6
-
-# Интерфейс
-gradio>=4.30.0
-
-# Утилиты
-numpy>=1.26.0
-tqdm>=4.66.0
-mutagen>=1.47.0
+huggingface-hub>=0.23.0
 openai-whisper>=20231117
 demucs-onnx
 onnxruntime
 
-# Метаданные и эксперименты
+# Векторный поиск
+faiss-cpu>=1.8.0
+
+# Аудио и метаданные
+librosa>=0.10.1
+soundfile>=0.12.1
+sounddevice>=0.4.6
+scipy>=1.11.0
+mutagen>=1.47.0
+
+# Интерфейс
+gradio>=5.0.0,<7
+
+# Утилиты и качество поиска
+numpy>=1.26.0
+tqdm>=4.66.0
+rapidfuzz>=3.0.0
+scikit-learn>=1.4.0
+
+# Эксперименты и тесты
 jiwer>=3.0.4
+pytest>=8.0.0
+pytest-cov>=5.0.0

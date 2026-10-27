@@ -1,23 +1,27 @@
+"""Проверка Demucs на первом файле библиотеки."""
+
+from __future__ import annotations
+
 import sys
-from pathlib import Path
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-import os
+import tempfile
 import time
+from pathlib import Path
 
-# Используем CPU
-os.environ["DEMUCS_DEVICE"] = "cpu"
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from demucs_onnx import separate_stem
+from check_scripts._common import first_audio
+from soundseek_core.enrichment import EnrichmentService
 
-TEST_FILE = "data/lonely_day.mp3"
-OUTPUT_DIR = "data/separated"
 
-print(f"Загрузка Demucs и отделение вокала...")
-t0 = time.time()
+def main() -> None:
+    source = first_audio()
+    with tempfile.TemporaryDirectory() as tmp:
+        print(f"Источник: {source.name}")
+        start = time.time()
+        vocals = EnrichmentService._separate_vocals(str(source), tmp)
+        print(f"Время: {time.time() - start:.1f} с")
+        print(f"Вокал: {vocals}")
 
-# separate_stem извлекает только одну дорожку (вокал)
-# Это в ~4 раза быстрее, чем разделять на все 4 дорожки
-vocals = separate_stem(TEST_FILE, stem="vocals", output_dir=OUTPUT_DIR)
 
-print(f"  Время: {time.time() - t0:.1f} сек")
-print(f"  Вокал сохранён в: {OUTPUT_DIR}/vocals.wav")
+if __name__ == "__main__":
+    main()

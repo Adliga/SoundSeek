@@ -1,55 +1,44 @@
-import os
+"""Диагностика каналов: метаданные, CLAP, текст, аудио."""
+
+from __future__ import annotations
+
 import sys
 from pathlib import Path
+
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-os.environ["HF_HUB_DISABLE_SYMLINKS_WARNING"] = "1"
-os.environ["DEMUCS_DEVICE"] = "cpu"
 
-from soundseek_core import AudioIndexer
+from check_scripts._common import make_searcher
 
 
-def main():
-    indexer = AudioIndexer(db_path="data/library")
+def main() -> None:
+    searcher = make_searcher()
+    indexer = searcher.indexer
+    db = indexer.db
 
-    print("\n" + "=" * 70)
-    print("1. ПРОВЕРКА: что сохранено в базе")
-    print("=" * 70)
-    for i, track in enumerate(indexer.db.tracks, 1):
-        print(f"\n[{i}] {track.id}")
-        print(f"    has_vocal: {track.has_vocal}")
-        print(f"    lyrics:    {track.lyrics[:120] + '...' if len(track.lyrics) > 120 else track.lyrics}")
+    print(f"Треков: {len(db)}; текстовых эмбеддингов: {db.has_text_embeddings()}")
+    for index, track in enumerate(db.snapshot(), 1):
+        print(
+            f"{index:2}. {track.display_title[:55]:55} | "
+            f"{track.derived.content_type:8} | "
+            f"{track.derived.genre or '—':16} | "
+            f"{track.derived.mood or '—':12} | "
+            f"вокал={track.derived.has_vocal} | "
+            f"текст={len(track.derived.lyrics)}"
+        )
 
-    print("\n" + "=" * 70)
-    print("2. ПРОВЕРКА: поиск через CLAP (аудиоэмбеддинги)")
-    print("=" * 70)
-    queries = ["lonely day", "весёлая песня", "тяжёлый рок", "грустная мелодия"]
-    for q in queries:
-        print(f"\nЗапрос (CLAP): {q}")
-        results = indexer.search_text(q, top_k=3)
-        for track, score in results:
-            print(f"    {score:.3f}  {track.id}")
+    print("\n--- CLAP: текстовые запросы ---")
+    for query in ["piano", "heavy metal", "calm ambient", "rap"]:
+        embedding = indexer.get_query_text_embedding(query)
+        print(f"\n{query}:")
+        for track, score in db.search_audio(embedding, top_k=3):
+            print(f"  {score:.3f}  {track.display_title}")
 
-    print("\n" + "=" * 70)
-    print("3. ПРОВЕРКА: поиск через MiniLM (текстовые эмбеддинги)")
-    print("=" * 70)
-    for q in queries:
-        print(f"\nЗапрос (MiniLM): {q}")
-        emb = indexer.get_text_embedding(q)
-        results = indexer.db.search_text(emb, top_k=3)
-        for track, score in results:
-            print(f"    {score:.3f}  {track.id}")
-
-    print("\n" + "=" * 70)
-    print("4. ПРОВЕРКА: поиск по строкам из песни")
-    print("=" * 70)
-    # Строки, которые точно есть в распознанных текстах
-    lyric_queries = ["lonely day", "should be banned", "двое против всех", "бал лицемеров"]
-    for q in lyric_queries:
-        print(f"\nЗапрос по строке: {q}")
-        emb = indexer.get_text_embedding(q)
-        results = indexer.db.search_text(emb, top_k=3)
-        for track, score in results:
-            print(f"    {score:.3f}  {track.id}")
+    print("\n--- Текстовый канал ---")
+    for query in ["lonely day", "родина", "война"]:
+        embedding = indexer.text_embedder.encode(query, is_query=True)
+        print(f"\n{query}:")
+        for track, score in db.search_text(embedding, top_k=3):
+            print(f"  {score:.3f}  {track.display_title}")
 
 
 if __name__ == "__main__":

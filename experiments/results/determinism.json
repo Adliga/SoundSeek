@@ -1,0 +1,32 @@
+{
+  "track": "Театральный демон",
+  "cosine_repeats": [
+    1.0,
+    1.0,
+    1.0
+  ],
+  "labels": [
+    {
+      "content_type": "music",
+      "genre": "punk_rock",
+      "genre_source": "tag",
+      "mood": "happy",
+      "has_vocal": null
+    },
+    {
+      "content_type": "music",
+      "genre": "punk_rock",
+      "genre_source": "tag",
+      "mood": "happy",
+      "has_vocal": null
+    },
+    {
+      "content_type": "music",
+      "genre": "punk_rock",
+      "genre_source": "tag",
+      "mood": "happy",
+      "has_vocal": null
+    }
+  ],
+  "deterministic": true
+}

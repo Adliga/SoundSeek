@@ -1,0 +1,74 @@
+[
+  {
+    "track": "lonely_day",
+    "condition": "mix",
+    "model": "base",
+    "language": "en",
+    "time_sec": 8.2,
+    "wer": 0.4341,
+    "cer": 0.2705
+  },
+  {
+    "track": "lonely_day",
+    "condition": "vocals",
+    "model": "base",
+    "language": "en",
+    "time_sec": 14.4,
+    "wer": 0.3101,
+    "cer": 0.197
+  },
+  {
+    "track": "korol_i_shut",
+    "condition": "mix",
+    "model": "base",
+    "language": "ru",
+    "time_sec": 24.6,
+    "wer": 0.53,
+    "cer": 0.2685
+  },
+  {
+    "track": "korol_i_shut",
+    "condition": "vocals",
+    "model": "base",
+    "language": "ru",
+    "time_sec": 32.2,
+    "wer": 0.5438,
+    "cer": 0.2961
+  },
+  {
+    "track": "lonely_day",
+    "condition": "mix",
+    "model": "small",
+    "language": "en",
+    "time_sec": 33.3,
+    "wer": 0.4264,
+    "cer": 0.389
+  },
+  {
+    "track": "lonely_day",
+    "condition": "vocals",
+    "model": "small",
+    "language": "en",
+    "time_sec": 88.5,
+    "wer": 0.2248,
+    "cer": 0.1369
+  },
+  {
+    "track": "korol_i_shut",
+    "condition": "mix",
+    "model": "small",
+    "language": "ru",
+    "time_sec": 53.0,
+    "wer": 0.4147,
+    "cer": 0.2491
+  },
+  {
+    "track": "korol_i_shut",
+    "condition": "vocals",
+    "model": "small",
+    "language": "ru",
+    "time_sec": 57.2,
+    "wer": 0.3641,
+    "cer": 0.1633
+  }
+]

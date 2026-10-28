@@ -76,8 +76,8 @@ def format_results(
             "или сформулировать описание звучания."
         )
         return summary + (
-            "<div style='padding:16px;border:1px solid #e0c9a6;"
-            "border-radius:8px;background:#fff8e8;color:#5b4300;'>"
+            "<div class='soundseek-warning-card' style='padding:16px;"
+            "border:1px solid #e0c9a6;border-radius:8px;'>"
             f"{escape(hint)}</div>"
         )
 
@@ -99,7 +99,7 @@ def format_results(
             if len(full_lyrics) > 220:
                 snippet += "…"
             lyrics = (
-                "<div style='font-size:12px;color:#4d5b70;margin-top:6px;'>"
+                "<div class='soundseek-muted' style='font-size:12px;margin-top:6px;'>"
                 f"<b>Текст:</b> {snippet}</div>"
             )
         notes = ""
@@ -109,28 +109,28 @@ def format_results(
             if len(note_text) > 180:
                 snippet += "…"
             notes = (
-                "<div style='font-size:12px;color:#4d5b70;margin-top:6px;'>"
+                "<div class='soundseek-muted' style='font-size:12px;margin-top:6px;'>"
                 f"<b>Заметка:</b> {snippet}</div>"
             )
         source = escape(track.derived.genre_source or "—")
         blocks.append(
             f"""
-            <div style="border:1px solid #d0d7e2;border-radius:10px;padding:14px;
+            <div class="soundseek-light-card" style="border:1px solid #d0d7e2;border-radius:10px;padding:14px;
                         margin-bottom:12px;background:#ffffff;color:#1a2b47;">
               <div style="font-size:16px;font-weight:650;">{index}. {title}</div>
-              <div style="color:#4d5b70;font-size:13px;margin:3px 0;">
+              <div class="soundseek-muted" style="font-size:13px;margin:3px 0;">
                 {artist} · {album}
               </div>
-              <div style="color:#40506a;font-size:13px;margin:6px 0;">
+              <div class="soundseek-muted" style="font-size:13px;margin:6px 0;">
                 Тип: <b>{escape(track.derived.content_type or "—")}</b> ·
                 Жанр: <b>{escape(track.derived.genre or "—")}</b>
-                <span style="color:#8090a8;">({source})</span> ·
+                <span class="soundseek-faint">({source})</span> ·
                 Настроение: <b>{escape(track.derived.mood or "—")}</b> ·
                 Вокал: <b>{vocal_label(track)}</b>
               </div>
               <div style="font-size:13px;margin:6px 0;">
                 Оценка: <b>{hit.final_score:.3f}</b>
-                <span style="color:#8090a8;">(база {hit.base_score:.3f}; {escape(_channel_summary(hit))})</span>
+                <span class="soundseek-faint">(база {hit.base_score:.3f}; {escape(_channel_summary(hit))})</span>
               </div>
               <div style="font-size:13px;margin-top:8px;">
                 <b>Почему найден:</b>

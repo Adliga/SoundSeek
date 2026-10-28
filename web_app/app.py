@@ -310,7 +310,7 @@ def make_playlist(target_mood, start_mood, end_mood, length, genre):
         rows.append(
             f"<li style='margin:8px 0;'><b>{index}. {escape(track.display_title)}</b>"
             f" — {escape(track.tags.artist or '—')}<br>"
-            f"<span style='color:#4d5b70;font-size:12px;'>"
+            f"<span class='soundseek-muted' style='font-size:12px;'>"
             f"{escape(track.derived.genre or '—')} / {escape(track.derived.mood or '—')} · "
             f"оценка {item.score:.3f} · {escape(item.reason)}</span></li>"
         )

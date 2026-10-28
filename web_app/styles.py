@@ -35,22 +35,41 @@ body.dark {
     box-shadow: none !important;
 }
 
-/* Светлые карточки внутри тёмной темы не должны наследовать белый текст. */
+/* Светлые карточки внутри тёмной темы не должны наследовать белый текст.
+   Gradio красит все элементы внутри .prose через `color: var(--body-text-color)`,
+   поэтому явные цвета нужны не только карточке, но и каждому потомку. */
 .soundseek-light-card {
     background: #f8fafc !important;
     color: #1a2b47 !important;
 }
 
-.soundseek-light-card b,
-.soundseek-light-card li {
+.soundseek-light-card * {
     color: #1a2b47 !important;
 }
 
-/* Приглушённый текст в результатах поиска. */
-.soundseek-summary {
-    color: #40506a;
+/* Приглушённый текст внутри светлых карточек: класс специфичнее, чем `*`. */
+.soundseek-light-card .soundseek-muted {
+    color: #4d5b70 !important;
 }
-body.dark .soundseek-summary {
-    color: #cbd5e1;
+
+.soundseek-light-card .soundseek-faint {
+    color: #5f6f87 !important;
+}
+
+/* Предупреждение о пустом результате тоже имеет фиксированный светлый фон. */
+.soundseek-warning-card {
+    background: #fff8e8 !important;
+    color: #5b4300 !important;
+}
+
+.soundseek-warning-card * {
+    color: #5b4300 !important;
+}
+
+/* Приглушённый текст в результатах поиска. Цвет берётся из темы,
+   поэтому разбор запроса читается и на светлом, и на тёмном фоне. */
+.soundseek-summary {
+    color: var(--body-text-color, #40506a) !important;
+    opacity: 0.78;
 }
 """

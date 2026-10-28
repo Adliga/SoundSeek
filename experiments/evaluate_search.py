@@ -21,7 +21,7 @@ from soundseek_core.indexer import AudioIndexer
 from soundseek_core.models import ParsedQuery, Track
 from soundseek_core.query_parser import parse_query
 from soundseek_core.rules import RuleEngine
-from soundseek_core.search import fusion, lyrics, metadata, semantic
+from soundseek_core.search import fusion, lyrics, metadata, notes, semantic
 
 
 @dataclass
@@ -138,6 +138,10 @@ def _ablation_hits(
         )
         if result:
             channels["lyrics"] = result
+    if mode == "full":
+        result = notes.search_notes(tracks, parsed, top_k=40)
+        if result:
+            channels["notes"] = result
     if mode == "full" and (
         parsed.year_from is not None
         or parsed.year_to is not None

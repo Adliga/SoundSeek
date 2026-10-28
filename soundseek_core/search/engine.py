@@ -9,7 +9,7 @@ from ..models import ParsedQuery, SearchHit
 from ..ontology import Ontology
 from ..query_parser import parse_query
 from ..rules import RuleEngine, tokenize
-from . import fusion, lyrics, melody, metadata, semantic
+from . import fusion, lyrics, melody, metadata, notes, semantic
 
 
 class SearchEngine:
@@ -73,6 +73,12 @@ class SearchEngine:
         )
         if lyrics_results:
             channels["lyrics"] = lyrics_results
+
+        notes_results = notes.search_notes(
+            tracks, parsed, top_k=max(top_k * CANDIDATE_MULTIPLIER, 30)
+        )
+        if notes_results:
+            channels["notes"] = notes_results
 
         if not channels:
             return []
@@ -156,6 +162,10 @@ class SearchEngine:
         if "lyrics" in hit.channels:
             lines.append(
                 f"канал текста песни: {hit.channels['lyrics']:.3f}"
+            )
+        if "notes" in hit.channels:
+            lines.append(
+                f"канал личных заметок: {hit.channels['notes']:.3f}"
             )
         if "filter" in hit.channels:
             lines.append("структурированный фильтр: год / вокал / отрицание")

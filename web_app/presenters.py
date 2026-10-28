@@ -47,6 +47,8 @@ def _channel_summary(hit: SearchHit) -> str:
         parts.append(f"CLAP {hit.channels['clap']:.3f}")
     if "lyrics" in hit.channels:
         parts.append(f"текст {hit.channels['lyrics']:.3f}")
+    if "notes" in hit.channels:
+        parts.append(f"заметки {hit.channels['notes']:.3f}")
     if "audio" in hit.channels:
         parts.append(f"аудио {hit.channels['audio']:.3f}")
     if "melody" in hit.channels:
@@ -63,7 +65,7 @@ def format_results(
     summary_title: str = "Разбор запроса",
 ) -> str:
     summary = (
-        f"<p style='color:#40506a;font-size:13px;margin-bottom:10px;'>"
+        f"<p class='soundseek-summary' style='font-size:13px;margin-bottom:10px;'>"
         f"{escape(summary_title)}: {escape(query_summary)}</p>"
         if query_summary
         else ""
@@ -100,6 +102,16 @@ def format_results(
                 "<div style='font-size:12px;color:#4d5b70;margin-top:6px;'>"
                 f"<b>Текст:</b> {snippet}</div>"
             )
+        notes = ""
+        if track.derived.user_notes:
+            note_text = track.derived.user_notes.strip().replace("\n", " ")
+            snippet = escape(note_text[:180])
+            if len(note_text) > 180:
+                snippet += "…"
+            notes = (
+                "<div style='font-size:12px;color:#4d5b70;margin-top:6px;'>"
+                f"<b>Заметка:</b> {snippet}</div>"
+            )
         source = escape(track.derived.genre_source or "—")
         blocks.append(
             f"""
@@ -125,6 +137,7 @@ def format_results(
                 <ul style="margin:4px 0 0 20px;">{explanations}</ul>
               </div>
               {lyrics}
+              {notes}
             </div>
             """
         )

@@ -1,8 +1,11 @@
+import numpy as np
+
+from soundseek_core.db import VectorDB
 from soundseek_core.models import ParsedQuery
 from soundseek_core.ontology import Ontology
 from soundseek_core.query_parser import parse_query
 from soundseek_core.rules import RuleEngine
-from soundseek_core.search import fusion, metadata
+from soundseek_core.search import SearchEngine, fusion, metadata, notes
 from tests.conftest import make_track
 
 
@@ -24,6 +27,46 @@ def test_metadata_does_not_use_path():
     )
     query = ParsedQuery(raw="music", free_text="music")
     assert metadata.score_track(track, query) == 0.0
+
+
+def test_notes_channel_finds_personal_note(ontology: Ontology):
+    track = make_track("gym", title="Training Song", genre="rock")
+    track.derived.user_notes = "для тренировки, на повтор"
+    query = parse_query("тренировка", ontology)
+    results = notes.search_notes([track], query)
+    assert results
+    assert results[0][0].id == "gym"
+    assert results[0][1] >= 0.9
+
+
+def test_notes_channel_requires_a_match(ontology: Ontology):
+    track = make_track("gym", title="Training Song", genre="rock")
+    track.derived.user_notes = "для тренировки"
+    results = notes.search_notes([track], parse_query("колыбельная", ontology))
+    assert results == []
+
+
+class _FakeIndexer:
+    """Минимальный индексер для проверки оркестратора без CLAP."""
+
+    def __init__(self, db: VectorDB, ontology: Ontology):
+        self.db = db
+        self.ontology = ontology
+
+    def get_query_text_embedding(self, text: str):
+        return np.zeros(512, dtype="float32")
+
+
+def test_engine_includes_notes_channel(ontology: Ontology):
+    track = make_track("gym", title="Training Song", genre="rock")
+    track.derived.user_notes = "для тренировки"
+    db = VectorDB()
+    db.add(np.ones(512, dtype="float32"), track)
+    engine = SearchEngine(_FakeIndexer(db, ontology))
+    hits = engine.search("тренировка", top_k=3)
+    assert hits
+    assert hits[0].track.id == "gym"
+    assert "notes" in hits[0].channels
 
 
 def test_metadata_multi_token_requires_two_matches(ontology: Ontology):

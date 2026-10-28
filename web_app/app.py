@@ -16,6 +16,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import gradio as gr
 
 from soundseek_core.config import (
+    AUDIO_EMBEDDING_VERSION,
     INDEX_PATH,
     TRACKS_DIR,
     ensure_directories,
@@ -33,6 +34,7 @@ from web_app.presenters import (
     track_choices,
     vocal_label,
 )
+from web_app.styles import APP_CSS
 from web_app.worker import EnrichmentQueue
 
 ensure_directories()
@@ -313,8 +315,9 @@ def make_playlist(target_mood, start_mood, end_mood, length, genre):
             f"оценка {item.score:.3f} · {escape(item.reason)}</span></li>"
         )
     return (
-        "<div style='border:1px solid #dbe3ee;border-radius:10px;padding:14px;"
-        "background:#f8fafc;'><ol style='margin:0 0 0 20px;'>"
+        "<div class='soundseek-light-card' style='border:1px solid #dbe3ee;"
+        "border-radius:10px;padding:14px;color:#1a2b47;'>"
+        "<ol style='margin:0 0 0 20px;'>"
         + "".join(rows)
         + "</ol></div>"
     )
@@ -478,6 +481,7 @@ with gr.Blocks(
                             track.tags.genre,
                             track.derived.genre,
                             track.derived.mood,
+                            track.derived.user_notes,
                         ]
                     ).lower()
                     if filter_text and filter_text not in haystack:
@@ -494,6 +498,17 @@ with gr.Blocks(
                         continue
                     visible.append(track)
 
+                stale = sum(
+                    1
+                    for track in tracks
+                    if track.index_version != AUDIO_EMBEDDING_VERSION
+                )
+                if stale:
+                    gr.Markdown(
+                        f"_Аудиопризнаки устарели у {stale} из {len(tracks)} "
+                        "треков: включите «Переиндексировать всё» и нажмите "
+                        "«Обновить библиотеку»._"
+                    )
                 gr.Markdown(f"Показано: **{len(visible)}** из {len(tracks)}")
                 with gr.Row(equal_height=True):
                     gr.Markdown("**#**", scale=0, min_width=30)
@@ -504,51 +519,54 @@ with gr.Blocks(
                     gr.Markdown("**Вокал / текст**", scale=3)
                     gr.Markdown("**Длит., с**", scale=1)
 
-                for index, track in enumerate(visible, 1):
-                    track_id = track.id
-                    status = status_map.get(
-                        track_id,
-                        "has_lyrics" if track.derived.lyrics else "idle",
-                    )
-                    label, variant = status_label(status)
-                    title = escape(track.display_title)
-                    duration = (
-                        f"{track.derived.duration:.0f}"
-                        if track.derived.duration
-                        else "—"
-                    )
-                    vocal_text = vocal_label(track)
-                    if track.derived.lyrics:
-                        vocal_text += " / текст есть"
-                    with gr.Row(equal_height=True):
-                        gr.Markdown(f"{index}", scale=0, min_width=30)
-                        gr.Markdown(title, scale=4)
-                        gr.Markdown(track.derived.content_type or "—", scale=1)
-                        gr.Markdown(track.derived.genre or "—", scale=2)
-                        gr.Markdown(track.derived.mood or "—", scale=2)
-                        with gr.Column(scale=3):
-                            if status in ("idle", "error", "skipped"):
-                                force = status in ("error", "skipped")
-                                button = gr.Button(
-                                    f"{label} ({vocal_text})",
-                                    size="sm",
-                                    variant=variant,
-                                )
-                                button.click(
-                                    fn=lambda tid=track_id, f=force: enqueue_and_status(
-                                        tid, f
-                                    ),
-                                    inputs=None,
-                                    outputs=track_status_state,
-                                )
-                            else:
-                                gr.Button(
-                                    f"{label} ({vocal_text})",
-                                    size="sm",
-                                    variant=variant,
-                                    interactive=False,
-                                )
-                        gr.Markdown(duration, scale=1)
+                with gr.Column(elem_classes="library-scroll"):
+                    for index, track in enumerate(visible, 1):
+                        track_id = track.id
+                        status = status_map.get(
+                            track_id,
+                            "has_lyrics" if track.derived.lyrics else "idle",
+                        )
+                        label, variant = status_label(status)
+                        title = escape(track.display_title)
+                        duration = (
+                            f"{track.derived.duration:.0f}"
+                            if track.derived.duration
+                            else "—"
+                        )
+                        vocal_text = vocal_label(track)
+                        if track.derived.lyrics:
+                            vocal_text += " / текст есть"
+                        with gr.Row(equal_height=True):
+                            gr.Markdown(f"{index}", scale=0, min_width=30)
+                            gr.Markdown(title, scale=4)
+                            gr.Markdown(
+                                track.derived.content_type or "—", scale=1
+                            )
+                            gr.Markdown(track.derived.genre or "—", scale=2)
+                            gr.Markdown(track.derived.mood or "—", scale=2)
+                            with gr.Column(scale=3):
+                                if status in ("idle", "error", "skipped"):
+                                    force = status in ("error", "skipped")
+                                    button = gr.Button(
+                                        f"{label} ({vocal_text})",
+                                        size="sm",
+                                        variant=variant,
+                                    )
+                                    button.click(
+                                        fn=lambda tid=track_id, f=force: enqueue_and_status(
+                                            tid, f
+                                        ),
+                                        inputs=None,
+                                        outputs=track_status_state,
+                                    )
+                                else:
+                                    gr.Button(
+                                        f"{label} ({vocal_text})",
+                                        size="sm",
+                                        variant=variant,
+                                        interactive=False,
+                                    )
+                            gr.Markdown(duration, scale=1)
 
             gr.Markdown("---")
             gr.Markdown("### Прослушивание и редактирование")
@@ -765,5 +783,5 @@ if __name__ == "__main__":
         server_port=7860,
         inbrowser=True,
         theme=gr.themes.Soft(),
-        css="body { color-scheme: light; }",
+        css=APP_CSS,
     )

@@ -1,6 +1,12 @@
 import numpy as np
 
-from soundseek_core.audio import load_query_audio, peak_normalize, split_into_windows
+from soundseek_core.audio import (
+    index_window_count,
+    load_query_audio,
+    middle_segment,
+    peak_normalize,
+    split_into_windows,
+)
 from soundseek_core.config import SAMPLE_RATE
 
 
@@ -33,3 +39,16 @@ def test_split_into_windows_is_deterministic():
         float(SAMPLE_RATE),
         float(2 * SAMPLE_RATE),
     ]
+
+
+def test_index_window_count_covers_full_track():
+    assert index_window_count(0.5) == 1
+    assert index_window_count(185.0) == 19
+    assert index_window_count(185.0, max_windows=12) == 12
+
+
+def test_middle_segment_is_centered():
+    audio = np.arange(10 * SAMPLE_RATE, dtype="float32")
+    segment = middle_segment(audio, seconds=2)
+    assert segment.size == 2 * SAMPLE_RATE
+    assert float(segment[0]) == 4.0 * SAMPLE_RATE

@@ -2,13 +2,20 @@
 
 from __future__ import annotations
 
+import math
 from pathlib import Path
 from typing import Any
 
 import librosa
 import numpy as np
 
-from .config import QUERY_WINDOW_SECONDS, SAMPLE_RATE
+from .config import (
+    CLAP_WINDOW_SECONDS,
+    INDEX_MAX_WINDOWS,
+    INDEX_WINDOW_SECONDS,
+    QUERY_WINDOW_SECONDS,
+    SAMPLE_RATE,
+)
 
 
 def peak_normalize(audio: np.ndarray) -> np.ndarray:
@@ -33,6 +40,48 @@ def load_middle(path: str | Path, seconds: int = QUERY_WINDOW_SECONDS) -> np.nda
     else:
         audio, _ = librosa.load(str(path), sr=SAMPLE_RATE, mono=True)
     return peak_normalize(audio)
+
+
+def load_track_audio(path: str | Path) -> np.ndarray:
+    """Загружает трек целиком для CLAP-индексации.
+
+    CLAP не принимает произвольную длину как один пример, поэтому дальше
+    трек детерминированно делится на 10-секундные окна по всей длительности.
+    """
+    audio, _ = librosa.load(str(path), sr=SAMPLE_RATE, mono=True)
+    return peak_normalize(audio)
+
+
+def middle_segment(
+    audio: np.ndarray,
+    seconds: int = INDEX_WINDOW_SECONDS,
+) -> np.ndarray:
+    """Возвращает средний фрагмент уже загруженного аудио."""
+    audio = np.asarray(audio, dtype="float32").reshape(-1)
+    size = int(seconds * SAMPLE_RATE)
+    if audio.size <= size:
+        return audio
+    start = max(0, (audio.size - size) // 2)
+    return audio[start : start + size]
+
+
+def index_window_count(
+    duration: float,
+    window_seconds: int = CLAP_WINDOW_SECONDS,
+    max_windows: int = INDEX_MAX_WINDOWS,
+) -> int:
+    """Считает число 10-секундных окон для покрытия всего трека.
+
+    ``ceil`` гарантирует, что последний фрагмент трека тоже попадёт в
+    индекс. Для очень длинных файлов число окон ограничивается, чтобы
+    индексация оставалась предсказуемой по времени.
+    """
+    if duration <= 0:
+        return 1
+    count = max(1, int(math.ceil(duration / float(window_seconds))))
+    if max_windows > 0:
+        count = min(count, max_windows)
+    return count
 
 
 def load_query_audio(source: Any, max_seconds: int = QUERY_WINDOW_SECONDS) -> np.ndarray:

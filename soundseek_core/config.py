@@ -25,8 +25,13 @@ INDEX_PATH = INDEXES_DIR / "library"
 AUDIO_EXTENSIONS = (".mp3", ".wav", ".flac", ".ogg", ".m4a", ".opus", ".aac")
 SAMPLE_RATE = 48_000
 CLAP_WINDOW_SECONDS = 10  # CLAP-htsat-unfused обучен на 10-секундных окнах
-INDEX_WINDOW_SECONDS = 30  # сколько секунд берем из середины трека
-INDEX_SEGMENTS = 3  # 3 фиксированных окна по 10 с: начало/середина/конец
+# Мелодический канал по-прежнему использует средний фрагмент: один контур
+# на весь длинный трек был бы слишком грубым для DTW.
+INDEX_WINDOW_SECONDS = 30
+INDEX_SEGMENTS = 3  # совместимость со старым API и тестами
+# CLAP-эмбеддинг считается по окнам, распределённым по всему треку.
+# Ограничение защищает от неконтролируемого времени на очень длинных файлах.
+INDEX_MAX_WINDOWS = int(os.getenv("SOUNDSEEK_INDEX_MAX_WINDOWS", "72"))
 QUERY_WINDOW_SECONDS = 30
 
 # ---------- Модели ----------
@@ -62,7 +67,7 @@ RRF_K = 60
 
 # ---------- База ----------
 DB_VERSION = 2
-AUDIO_EMBEDDING_VERSION = 3
+AUDIO_EMBEDDING_VERSION = 4
 TEXT_EMBEDDING_VERSION = 2
 
 

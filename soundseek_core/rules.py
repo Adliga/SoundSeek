@@ -228,6 +228,7 @@ class RuleEngine:
                     track.tags.artist,
                     track.tags.album,
                     track.display_title,
+                    track.derived.user_notes,
                 ]
             )
         )

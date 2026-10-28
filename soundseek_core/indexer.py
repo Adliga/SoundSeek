@@ -14,10 +14,9 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Optional
 
-import librosa
 import numpy as np
 
-from .audio import load_middle
+from .audio import index_window_count, load_track_audio, middle_segment
 from .classifier import AudioClassifier, Classification
 from .config import (
     AUDIO_EMBEDDING_VERSION,
@@ -26,6 +25,7 @@ from .config import (
     EXCLUDED_DIRS,
     EXCLUDED_PREFIXES,
     INDEX_WINDOW_SECONDS,
+    SAMPLE_RATE,
     TRACKS_DIR,
 )
 from .db import VectorDB
@@ -319,9 +319,16 @@ class AudioIndexer:
             old_track = existing
 
         t0 = time.time()
-        duration = float(librosa.get_duration(path=str(path)))
-        audio = load_middle(path, seconds=INDEX_WINDOW_SECONDS)
-        audio_emb = self.get_audio_embedding(audio, segments=3)
+        # CLAP обучался на 10-секундных фрагментах, поэтому весь трек
+        # представляется набором окон по всей длительности, а не только
+        # средними 30 секундами. Это важно и для поиска по напеванию:
+        # характерный мотив может находиться в начале или в конце трека.
+        audio = load_track_audio(path)
+        duration = float(audio.size) / float(SAMPLE_RATE)
+        audio_emb = self.get_audio_embedding(
+            audio,
+            segments=index_window_count(duration),
+        )
 
         raw_tags = read_tags(path)
         cover_path = save_cover(raw_tags, track_id, COVERS_DIR)
@@ -342,8 +349,9 @@ class AudioIndexer:
             "music",
             "singing",
         ):
-            track.derived.melody_contour = extract_melody(audio).tolist()
-            track.derived.melody_chroma = extract_chroma(audio).tolist()
+            melody_audio = middle_segment(audio, seconds=INDEX_WINDOW_SECONDS)
+            track.derived.melody_contour = extract_melody(melody_audio).tolist()
+            track.derived.melody_chroma = extract_chroma(melody_audio).tolist()
 
         text_embedding = None
         if track.derived.lyrics:

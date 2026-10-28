@@ -27,6 +27,7 @@ from soundseek_core.playlist import generate_playlist
 from soundseek_core.query_parser import parse_query
 from soundseek_core.searcher import Searcher
 from soundseek_core.visualization import build_embedding_map
+from web_app.map_ui import MAP_JS
 from web_app.presenters import (
     cover_path,
     format_results,
@@ -290,6 +291,38 @@ def handle_audio_search(audio_path, top_k: int):
 
 def update_embedding_map(color_by: str):
     return build_embedding_map(indexer.db, color_by=color_by)
+
+
+def handle_map_track(evt: gr.EventData):
+    """Обновляет закреплённый плеер по клику на точку карты."""
+    track_id = str(getattr(evt, "track_id", "") or "")
+    track = indexer.db.get(track_id)
+    if track is None or not Path(track.path).is_file():
+        return gr.update(), (
+            '<div class="soundseek-map-player-hint">'
+            "Трек не найден или файл недоступен."
+            "</div>"
+        )
+
+    title = escape(track.display_title or "Без названия")
+    artist = escape(track.tags.artist or "—")
+    genre = escape(track.derived.genre or "—")
+    meta = (
+        f'<div class="soundseek-map-player-track">{title}</div>'
+        f'<div class="soundseek-map-player-artist">'
+        f"{artist} · {genre}</div>"
+    )
+    player = gr.Audio(
+        value=track.path,
+        visible=True,
+        autoplay=True,
+        interactive=False,
+        show_label=False,
+        buttons=[],
+        type="filepath",
+        elem_id="soundseek-map-audio",
+    )
+    return player, meta
 
 
 def make_playlist(target_mood, start_mood, end_mood, length, genre):
@@ -702,21 +735,46 @@ with gr.Blocks(
         with gr.Tab("Карта аудиотеки"):
             gr.Markdown(
                 "Двумерная проекция CLAP-эмбеддингов (PCA). "
-                "Точки рядом звучат похоже; наведите курсор, чтобы увидеть трек."
+                "Наведите на точку, чтобы увидеть трек; нажмите, чтобы "
+                "включить его в плеере справа."
             )
-            with gr.Row():
-                map_color = gr.Dropdown(
-                    choices=[
-                        ("по жанру", "genre"),
-                        ("по настроению", "mood"),
-                        ("по типу контента", "content_type"),
-                    ],
-                    value="genre",
-                    label="Цвет",
-                    scale=2,
+            with gr.Column(elem_id="soundseek-map-player"):
+                gr.Markdown(
+                    "### Аудиоплеер",
+                    elem_classes="soundseek-map-player-title",
                 )
-                map_btn = gr.Button("Пересчитать карту", scale=1)
-            map_output = gr.HTML()
+                map_now_playing = gr.HTML(
+                    '<div class="soundseek-map-player-hint">'
+                    "Нажмите на точку на карте."
+                    "</div>",
+                    elem_classes="soundseek-map-player-meta",
+                )
+                map_player = gr.Audio(
+                    visible=False,
+                    autoplay=True,
+                    interactive=False,
+                    show_label=False,
+                    buttons=[],
+                    type="filepath",
+                )
+            with gr.Column(elem_id="soundseek-map-content"):
+                with gr.Row():
+                    map_color = gr.Dropdown(
+                        choices=[
+                            ("по жанру", "genre"),
+                            ("по настроению", "mood"),
+                            ("по типу контента", "content_type"),
+                        ],
+                        value="genre",
+                        label="Цвет",
+                        scale=2,
+                    )
+                    map_btn = gr.Button("Пересчитать карту", scale=1)
+                map_output = gr.HTML(
+                    value=update_embedding_map("genre"),
+                    js_on_load=MAP_JS,
+                    elem_id="soundseek-map-output",
+                )
             map_btn.click(
                 fn=update_embedding_map,
                 inputs=map_color,
@@ -726,6 +784,11 @@ with gr.Blocks(
                 fn=update_embedding_map,
                 inputs=map_color,
                 outputs=map_output,
+            )
+            map_output.track_click(
+                fn=handle_map_track,
+                inputs=None,
+                outputs=[map_player, map_now_playing],
             )
 
         with gr.Tab("Плейлист"):

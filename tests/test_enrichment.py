@@ -1,5 +1,6 @@
 import numpy as np
 
+from soundseek_core.config import WHISPER_MODEL_SIZE
 from soundseek_core.enrichment import EnrichmentService
 
 from .conftest import make_track
@@ -28,6 +29,16 @@ def _service() -> tuple[EnrichmentService, FakeDB]:
         save_callback=lambda: None,
     )
     return service, db
+
+
+def test_whisper_size_falls_back_when_none_is_passed():
+    service = EnrichmentService(
+        db=FakeDB(),
+        text_embedder=lambda: FakeTextEmbedder(),
+        save_callback=lambda: None,
+        whisper_model_size=None,
+    )
+    assert service.whisper_model_size == WHISPER_MODEL_SIZE
 
 
 def test_force_enrichment_keeps_previous_lyrics_on_empty_asr(monkeypatch):

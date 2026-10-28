@@ -25,12 +25,14 @@ class EnrichmentService:
         db: VectorDB,
         text_embedder: Callable[[], TextEmbedder],
         save_callback: Callable[[], None],
-        whisper_model_size: str = WHISPER_MODEL_SIZE,
+        whisper_model_size: str | None = None,
     ):
         self.db = db
         self._get_text_embedder = text_embedder
         self._save = save_callback
-        self.whisper_model_size = whisper_model_size
+        # None приходит из AudioIndexer, когда размер не задан явно.
+        # Нельзя передавать его в whisper.load_model: там ожидается имя модели.
+        self.whisper_model_size = whisper_model_size or WHISPER_MODEL_SIZE
         self._whisper = None
 
     def _get_whisper(self):

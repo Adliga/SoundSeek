@@ -15,6 +15,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import gradio as gr
 
+from soundseek_core.albums import build_album_sections
 from soundseek_core.config import (
     AUDIO_EMBEDDING_VERSION,
     INDEX_PATH,
@@ -27,7 +28,15 @@ from soundseek_core.playlist import generate_playlist
 from soundseek_core.query_parser import parse_query
 from soundseek_core.searcher import Searcher
 from soundseek_core.visualization import build_embedding_map
+from web_app.album_presenters import build_albums_view, format_album_detail
+from web_app.albums_ui import ALBUM_JS
 from web_app.map_ui import MAP_JS
+from web_app.player_ui import (
+    PLAY_BUTTON_JS,
+    format_player_error,
+    format_player_meta,
+    play_button_html,
+)
 from web_app.presenters import (
     cover_path,
     format_results,
@@ -173,7 +182,7 @@ def remove_track(track_id: str):
 
 # ---------- Карточка и редактирование ----------
 def load_track_for_edit(track_id):
-    empty = (None, None, "", "", "", "", "", "", "", "", "", "")
+    empty = (None, "", "", "", "", "", "", "", "", "", "")
     if not track_id:
         return empty
     track = indexer.db.get(track_id)
@@ -181,7 +190,6 @@ def load_track_for_edit(track_id):
         return empty
     year = str(track.tags.year) if track.tags.year else ""
     return (
-        track.path,
         cover_path(track),
         track.tags.title,
         track.tags.artist,
@@ -293,36 +301,81 @@ def update_embedding_map(color_by: str):
     return build_embedding_map(indexer.db, color_by=color_by)
 
 
-def handle_map_track(evt: gr.EventData):
-    """Обновляет закреплённый плеер по клику на точку карты."""
-    track_id = str(getattr(evt, "track_id", "") or "")
-    track = indexer.db.get(track_id)
-    if track is None or not Path(track.path).is_file():
-        return gr.update(), (
-            '<div class="soundseek-map-player-hint">'
-            "Трек не найден или файл недоступен."
-            "</div>"
-        )
-
-    title = escape(track.display_title or "Без названия")
-    artist = escape(track.tags.artist or "—")
-    genre = escape(track.derived.genre or "—")
-    meta = (
-        f'<div class="soundseek-map-player-track">{title}</div>'
-        f'<div class="soundseek-map-player-artist">'
-        f"{artist} · {genre}</div>"
-    )
-    player = gr.Audio(
-        value=track.path,
-        visible=True,
-        autoplay=True,
+def _player_audio(path: str | None) -> gr.Audio:
+    return gr.Audio(
+        value=path,
+        visible=bool(path),
+        autoplay=bool(path),
         interactive=False,
         show_label=False,
         buttons=[],
         type="filepath",
-        elem_id="soundseek-map-audio",
+        elem_id="soundseek-global-audio",
     )
-    return player, meta
+
+
+def play_track(track_id: str):
+    """Включает трек в единственном закреплённом плеере."""
+    track = indexer.db.get(str(track_id or ""))
+    if track is None or not Path(track.path).is_file():
+        message = (
+            "Трек не найден."
+            if track is None
+            else "Файл трека недоступен."
+        )
+        return (
+            gr.update(visible=True),
+            _player_audio(None),
+            format_player_error(message),
+        )
+    return (
+        gr.update(visible=True),
+        _player_audio(track.path),
+        format_player_meta(track),
+    )
+
+
+def close_global_player():
+    """Скрывает плеер и останавливает текущее воспроизведение."""
+    return (
+        gr.update(visible=False),
+        _player_audio(None),
+        "",
+    )
+
+
+def handle_track_play(evt: gr.EventData):
+    return play_track(str(getattr(evt, "track_id", "") or ""))
+
+
+def album_sections():
+    return build_album_sections(indexer.db.snapshot())
+
+
+def _find_album(key: str):
+    type_albums, metadata_albums = album_sections()
+    return next(
+        (
+            item
+            for item in (*type_albums, *metadata_albums)
+            if item.key == key
+        ),
+        None,
+    )
+
+
+def update_albums(selected_key: str):
+    type_albums, metadata_albums = album_sections()
+    return (
+        build_albums_view(type_albums, metadata_albums),
+        format_album_detail(_find_album(selected_key or "")),
+    )
+
+
+def handle_album_click(evt: gr.EventData):
+    """Показывает треки выбранного альбома."""
+    key = str(getattr(evt, "album_key", "") or "")
+    return key, format_album_detail(_find_album(key))
 
 
 def make_playlist(target_mood, start_mood, end_mood, length, genre):
@@ -341,11 +394,15 @@ def make_playlist(target_mood, start_mood, end_mood, length, genre):
     for index, item in enumerate(items, 1):
         track = item.track
         rows.append(
-            f"<li style='margin:8px 0;'><b>{index}. {escape(track.display_title)}</b>"
+            "<li style='display:flex;align-items:flex-start;gap:10px;margin:8px 0;'>"
+            f"{play_button_html(track.id, track.display_title)}"
+            "<div>"
+            f"<b>{index}. {escape(track.display_title)}</b>"
             f" — {escape(track.tags.artist or '—')}<br>"
             f"<span class='soundseek-muted' style='font-size:12px;'>"
             f"{escape(track.derived.genre or '—')} / {escape(track.derived.mood or '—')} · "
-            f"оценка {item.score:.3f} · {escape(item.reason)}</span></li>"
+            f"оценка {item.score:.3f} · {escape(item.reason)}</span>"
+            "</div></li>"
         )
     return (
         "<div class='soundseek-light-card' style='border:1px solid #dbe3ee;"
@@ -368,6 +425,39 @@ with gr.Blocks(
 
     track_status_state = gr.State(get_status_map())
 
+    with gr.Column(
+        visible=False,
+        elem_id="soundseek-global-player",
+    ) as global_player:
+        gr.Markdown(
+            "### Сейчас играет",
+            elem_classes="soundseek-global-title",
+        )
+        global_close = gr.Button(
+            "✕",
+            size="sm",
+            variant="secondary",
+            elem_id="soundseek-global-close",
+        )
+        global_meta = gr.HTML(
+            "",
+            elem_classes="soundseek-global-meta",
+        )
+        global_audio = gr.Audio(
+            visible=False,
+            autoplay=False,
+            interactive=False,
+            show_label=False,
+            buttons=[],
+            type="filepath",
+            elem_id="soundseek-global-audio",
+        )
+    global_close.click(
+        fn=close_global_player,
+        inputs=None,
+        outputs=[global_player, global_audio, global_meta],
+    )
+
     with gr.Tabs():
         with gr.Tab("Поиск по тексту"):
             with gr.Row():
@@ -380,7 +470,15 @@ with gr.Blocks(
                     1, 20, value=5, step=1, label="Сколько показать", scale=1
                 )
                 text_btn = gr.Button("Найти", variant="primary", scale=1)
-            text_output = gr.HTML(label="Результаты")
+            text_output = gr.HTML(
+                label="Результаты",
+                js_on_load=PLAY_BUTTON_JS,
+            )
+            text_output.track_play(
+                fn=handle_track_play,
+                inputs=None,
+                outputs=[global_player, global_audio, global_meta],
+            )
             text_btn.click(
                 handle_text_search,
                 inputs=[text_input, top_k_text],
@@ -419,7 +517,15 @@ with gr.Blocks(
                 1, 20, value=5, step=1, label="Сколько показать"
             )
             audio_btn = gr.Button("Найти похожее", variant="primary")
-            audio_output = gr.HTML(label="Результаты")
+            audio_output = gr.HTML(
+                label="Результаты",
+                js_on_load=PLAY_BUTTON_JS,
+            )
+            audio_output.track_play(
+                fn=handle_track_play,
+                inputs=None,
+                outputs=[global_player, global_audio, global_meta],
+            )
             audio_btn.click(
                 handle_audio_search,
                 inputs=[audio_input, top_k_audio],
@@ -544,6 +650,7 @@ with gr.Blocks(
                     )
                 gr.Markdown(f"Показано: **{len(visible)}** из {len(tracks)}")
                 with gr.Row(equal_height=True):
+                    gr.Markdown("**▶**", scale=0, min_width=36)
                     gr.Markdown("**#**", scale=0, min_width=30)
                     gr.Markdown("**Название**", scale=4)
                     gr.Markdown("**Тип**", scale=1)
@@ -570,6 +677,21 @@ with gr.Blocks(
                         if track.derived.lyrics:
                             vocal_text += " / текст есть"
                         with gr.Row(equal_height=True):
+                            play_button = gr.Button(
+                                "▶",
+                                size="sm",
+                                min_width=36,
+                                elem_classes="soundseek-row-play",
+                            )
+                            play_button.click(
+                                fn=lambda tid=track_id: play_track(tid),
+                                inputs=None,
+                                outputs=[
+                                    global_player,
+                                    global_audio,
+                                    global_meta,
+                                ],
+                            )
                             gr.Markdown(f"{index}", scale=0, min_width=30)
                             gr.Markdown(title, scale=4)
                             gr.Markdown(
@@ -618,8 +740,22 @@ with gr.Blocks(
                         label="Обложка", height=240, interactive=False
                     )
                 with gr.Column(scale=3):
-                    track_player = gr.Audio(
-                        interactive=False, label="Воспроизведение"
+                    gr.Markdown(
+                        "Трек воспроизводится в глобальном плеере справа. "
+                        "Плеер остаётся на месте при переключении вкладок."
+                    )
+                    edit_play_btn = gr.Button(
+                        "▶ Слушать выбранный трек",
+                        variant="secondary",
+                    )
+                    edit_play_btn.click(
+                        fn=play_track,
+                        inputs=track_status_text,
+                        outputs=[
+                            global_player,
+                            global_audio,
+                            global_meta,
+                        ],
                     )
 
             with gr.Accordion("Редактировать теги и метаданные", open=False):
@@ -668,7 +804,6 @@ with gr.Blocks(
                 fn=load_track_for_edit,
                 inputs=track_dropdown,
                 outputs=[
-                    track_player,
                     cover_image,
                     edit_title,
                     edit_artist,
@@ -736,27 +871,8 @@ with gr.Blocks(
             gr.Markdown(
                 "Двумерная проекция CLAP-эмбеддингов (PCA). "
                 "Наведите на точку, чтобы увидеть трек; нажмите, чтобы "
-                "включить его в плеере справа."
+                "включить его в глобальном плеере."
             )
-            with gr.Column(elem_id="soundseek-map-player"):
-                gr.Markdown(
-                    "### Аудиоплеер",
-                    elem_classes="soundseek-map-player-title",
-                )
-                map_now_playing = gr.HTML(
-                    '<div class="soundseek-map-player-hint">'
-                    "Нажмите на точку на карте."
-                    "</div>",
-                    elem_classes="soundseek-map-player-meta",
-                )
-                map_player = gr.Audio(
-                    visible=False,
-                    autoplay=True,
-                    interactive=False,
-                    show_label=False,
-                    buttons=[],
-                    type="filepath",
-                )
             with gr.Column(elem_id="soundseek-map-content"):
                 with gr.Row():
                     map_color = gr.Dropdown(
@@ -786,9 +902,45 @@ with gr.Blocks(
                 outputs=map_output,
             )
             map_output.track_click(
-                fn=handle_map_track,
+                fn=handle_track_play,
                 inputs=None,
-                outputs=[map_player, map_now_playing],
+                outputs=[global_player, global_audio, global_meta],
+            )
+
+        with gr.Tab("Альбомы"):
+            with gr.Row():
+                gr.Markdown("### Альбомы", scale=4)
+                album_refresh = gr.Button("Обновить альбомы", scale=1)
+            gr.Markdown(
+                "Основные альбомы собраны по типу контента. Отдельно показаны "
+                "альбомы, для которых в библиотеке есть минимум два трека с "
+                "одинаковыми метаданными. Нажмите на обложку, чтобы увидеть треки."
+            )
+            album_selected = gr.State("")
+            album_detail = gr.HTML(
+                value=format_album_detail(None),
+                elem_id="soundseek-album-detail",
+                js_on_load=PLAY_BUTTON_JS,
+            )
+            album_output = gr.HTML(
+                value=build_albums_view(*album_sections()),
+                js_on_load=ALBUM_JS,
+                elem_id="soundseek-album-output",
+            )
+            album_output.album_click(
+                fn=handle_album_click,
+                inputs=None,
+                outputs=[album_selected, album_detail],
+            )
+            album_detail.track_play(
+                fn=handle_track_play,
+                inputs=None,
+                outputs=[global_player, global_audio, global_meta],
+            )
+            album_refresh.click(
+                fn=update_albums,
+                inputs=album_selected,
+                outputs=[album_output, album_detail],
             )
 
         with gr.Tab("Плейлист"):
@@ -826,7 +978,12 @@ with gr.Blocks(
                     3, 30, value=10, step=1, label="Длина", scale=2
                 )
                 playlist_btn = gr.Button("Собрать плейлист", variant="primary", scale=1)
-            playlist_output = gr.HTML()
+            playlist_output = gr.HTML(js_on_load=PLAY_BUTTON_JS)
+            playlist_output.track_play(
+                fn=handle_track_play,
+                inputs=None,
+                outputs=[global_player, global_audio, global_meta],
+            )
             playlist_btn.click(
                 fn=make_playlist,
                 inputs=[

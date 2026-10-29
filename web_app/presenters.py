@@ -6,6 +6,7 @@ from html import escape
 from pathlib import Path
 
 from soundseek_core.models import ParsedQuery, SearchHit, Track
+from web_app.player_ui import play_button_html
 
 STATUS_LABELS = {
     "idle": ("Распознать текст", "secondary"),
@@ -117,7 +118,10 @@ def format_results(
             f"""
             <div class="soundseek-light-card" style="border:1px solid #d0d7e2;border-radius:10px;padding:14px;
                         margin-bottom:12px;background:#ffffff;color:#1a2b47;">
-              <div style="font-size:16px;font-weight:650;">{index}. {title}</div>
+              <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;">
+                <div style="font-size:16px;font-weight:650;min-width:0;">{index}. {title}</div>
+                {play_button_html(track.id, track.display_title)}
+              </div>
               <div class="soundseek-muted" style="font-size:13px;margin:3px 0;">
                 {artist} · {album}
               </div>

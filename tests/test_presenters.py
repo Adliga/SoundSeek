@@ -31,6 +31,7 @@ def test_result_card_marks_light_text_for_dark_theme() -> None:
     assert "soundseek-summary" in html
     assert "soundseek-muted" in html
     assert "soundseek-faint" in html
+    assert 'data-track-play="miku"' in html
     assert "Заметка:" in html
 
 

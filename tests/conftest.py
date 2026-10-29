@@ -25,11 +25,24 @@ def make_track(
     lyrics: str = "",
     year: int | None = None,
     path: str | None = None,
+    album: str = "",
+    album_artist: str = "",
+    cover_path: str = "",
+    track_number: int | None = None,
 ) -> Track:
     return Track(
         id=track_id,
         path=path or f"data/tracks/{track_id}.mp3",
-        tags=FileTags(title=title, artist=artist, genre=tag_genre, year=year),
+        tags=FileTags(
+            title=title,
+            artist=artist,
+            album=album,
+            album_artist=album_artist,
+            cover_path=cover_path,
+            track_number=track_number,
+            genre=tag_genre,
+            year=year,
+        ),
         derived=DerivedData(
             content_type=content_type,
             genre=genre,

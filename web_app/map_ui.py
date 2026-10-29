@@ -35,7 +35,8 @@ MAP_JS = r"""
       node.className = "soundseek-map-tooltip";
       node.innerHTML =
         '<div class="soundseek-map-tooltip-title"></div>' +
-        '<div class="soundseek-map-tooltip-artist"></div>';
+        '<div class="soundseek-map-tooltip-artist"></div>' +
+        '<div class="soundseek-map-tooltip-action">▶ Включить в плеере</div>';
       host.appendChild(node);
     }
     return node;

@@ -30,6 +30,7 @@ from soundseek_core.searcher import Searcher
 from soundseek_core.visualization import build_embedding_map
 from web_app.album_presenters import build_albums_view, format_album_detail
 from web_app.albums_ui import ALBUM_JS
+from web_app.library_ui import LIBRARY_JS
 from web_app.map_ui import MAP_JS
 from web_app.player_ui import (
     PLAY_BUTTON_JS,
@@ -39,10 +40,9 @@ from web_app.player_ui import (
 )
 from web_app.presenters import (
     cover_path,
+    format_library_table,
     format_results,
-    status_label,
     track_choices,
-    vocal_label,
 )
 from web_app.styles import APP_CSS
 from web_app.worker import EnrichmentQueue
@@ -64,6 +64,25 @@ VOCAL_CHOICES = [
     ("без вокала", "no"),
     ("вокал не проверен", "unknown"),
 ]
+
+# Принудительно включаем тёмную тему, чтобы палитра SoundSeek не зависела
+# от системных настроек пользователя.
+DARK_MODE_HEAD = (
+    "<script>"
+    "(function(){"
+    "  const apply=()=>{"
+    "    document.documentElement.classList.add('dark');"
+    "    if (document.body) document.body.classList.add('dark');"
+    "  };"
+    "  if(document.readyState==='loading')"
+    "    document.addEventListener('DOMContentLoaded',apply);"
+    "  else apply();"
+    "  const obs=new MutationObserver(apply);"
+    "  obs.observe(document.documentElement,{attributes:true,"
+    "    attributeFilter:['class']});"
+    "})();"
+    "</script>"
+)
 
 
 def get_track_choices():
@@ -201,6 +220,15 @@ def load_track_for_edit(track_id):
         track.derived.lyrics,
         track.derived.user_notes,
         track.id,
+    )
+
+
+def select_track_for_edit(track_id):
+    """Синхронизирует список, раскрывает форму и заполняет карточку."""
+    return (
+        gr.update(value=track_id or None),
+        gr.update(open=True),
+        *load_track_for_edit(track_id),
     )
 
 
@@ -348,6 +376,20 @@ def handle_track_play(evt: gr.EventData):
     return play_track(str(getattr(evt, "track_id", "") or ""))
 
 
+def handle_track_enrich(evt: gr.EventData):
+    """Ставит распознавание трека в очередь из HTML-таблицы библиотеки."""
+    track_id = str(getattr(evt, "track_id", "") or "")
+    if not track_id:
+        return worker.status_map()
+    force = bool(getattr(evt, "force", False))
+    return enqueue_and_status(track_id, force)
+
+
+def handle_track_select(evt: gr.EventData):
+    """Запоминает трек, выбранный кликом по строке библиотеки."""
+    return str(getattr(evt, "track_id", "") or "")
+
+
 def album_sections():
     return build_album_sections(indexer.db.snapshot())
 
@@ -389,33 +431,40 @@ def make_playlist(target_mood, start_mood, end_mood, length, genre):
         genre=genre or "",
     )
     if not items:
-        return "<p><i>Не удалось собрать плейлист: в библиотеке нет подходящих треков.</i></p>"
+        return (
+            '<div class="soundseek-empty-card">'
+            '<span class="soundseek-empty-icon">♪</span>'
+            '<span class="soundseek-empty-text">'
+            "Не удалось собрать плейлист: в библиотеке нет подходящих треков."
+            "</span></div>"
+        )
     rows = []
     for index, item in enumerate(items, 1):
         track = item.track
         rows.append(
-            "<li style='display:flex;align-items:flex-start;gap:10px;margin:8px 0;'>"
+            '<li class="soundseek-playlist-row">'
             f"{play_button_html(track.id, track.display_title)}"
-            "<div>"
-            f"<b>{index}. {escape(track.display_title)}</b>"
-            f" — {escape(track.tags.artist or '—')}<br>"
-            f"<span class='soundseek-muted' style='font-size:12px;'>"
-            f"{escape(track.derived.genre or '—')} / {escape(track.derived.mood or '—')} · "
-            f"оценка {item.score:.3f} · {escape(item.reason)}</span>"
-            "</div></li>"
+            '<div class="soundseek-playlist-copy">'
+            f'<div class="soundseek-playlist-title">'
+            f'{index}. {escape(track.display_title)}</div>'
+            f'<div class="soundseek-playlist-artist">'
+            f'{escape(track.tags.artist or "—")}</div>'
+            f'<div class="soundseek-playlist-meta">'
+            f'{escape(track.derived.genre or "—")} / '
+            f'{escape(track.derived.mood or "—")} · '
+            f'оценка {item.score:.3f} · {escape(item.reason)}'
+            '</div></div></li>'
         )
     return (
-        "<div class='soundseek-light-card' style='border:1px solid #dbe3ee;"
-        "border-radius:10px;padding:14px;color:#1a2b47;'>"
-        "<ol style='margin:0 0 0 20px;'>"
-        + "".join(rows)
-        + "</ol></div>"
+        '<div class="soundseek-playlist">'
+        '<ol>' + "".join(rows) + '</ol></div>'
     )
 
 
 # ---------- Интерфейс ----------
 with gr.Blocks(
     title="SoundSeek",
+    head=DARK_MODE_HEAD,
 ) as demo:
     gr.Markdown(
         "# SoundSeek\n"
@@ -424,6 +473,7 @@ with gr.Blocks(
     )
 
     track_status_state = gr.State(get_status_map())
+    selected_track_state = gr.State("")
 
     with gr.Column(
         visible=False,
@@ -497,6 +547,7 @@ with gr.Blocks(
                     "рок, но не панк",
                     "trap",
                     "piano",
+                    "грустный рок, но не панк, с вокалом, 2010-е",
                 ],
                 inputs=text_input,
             )
@@ -557,7 +608,7 @@ with gr.Blocks(
                     enqueue_all_btn = gr.Button("Распознать текст у всех")
             status_msg = gr.Textbox(label="Статус", interactive=False)
 
-            with gr.Row():
+            with gr.Row(elem_classes="soundseek-filter-bar"):
                 library_filter = gr.Textbox(
                     label="Фильтр по названию/исполнителю",
                     placeholder="начните вводить...",
@@ -583,13 +634,16 @@ with gr.Blocks(
                 )
 
             gr.Markdown(
-                "Кнопка в колонке «Вокал» запускает Demucs + Whisper. "
-                "Ошибки сохраняются и доступны для повторного запуска."
+                "Кнопка в колонке «Вокал / статус» запускает Demucs + Whisper. "
+                "Ошибки сохраняются и доступны для повторного запуска. "
+                "Нажмите на строку трека, чтобы открыть его в форме "
+                "редактирования ниже."
             )
 
             @gr.render(
                 inputs=[
                     track_status_state,
+                    selected_track_state,
                     library_filter,
                     library_genre,
                     library_mood,
@@ -598,6 +652,7 @@ with gr.Blocks(
             )
             def render_tracks(
                 status_map,
+                selected_track_id,
                 filter_text,
                 genre_filter,
                 mood_filter,
@@ -649,82 +704,38 @@ with gr.Blocks(
                         "«Обновить библиотеку»._"
                     )
                 gr.Markdown(f"Показано: **{len(visible)}** из {len(tracks)}")
-                with gr.Row(equal_height=True):
-                    gr.Markdown("**▶**", scale=0, min_width=36)
-                    gr.Markdown("**#**", scale=0, min_width=30)
-                    gr.Markdown("**Название**", scale=4)
-                    gr.Markdown("**Тип**", scale=1)
-                    gr.Markdown("**Жанр**", scale=2)
-                    gr.Markdown("**Настроение**", scale=2)
-                    gr.Markdown("**Вокал / текст**", scale=3)
-                    gr.Markdown("**Длит., с**", scale=1)
 
-                with gr.Column(elem_classes="library-scroll"):
-                    for index, track in enumerate(visible, 1):
-                        track_id = track.id
-                        status = status_map.get(
-                            track_id,
-                            "has_lyrics" if track.derived.lyrics else "idle",
-                        )
-                        label, variant = status_label(status)
-                        title = escape(track.display_title)
-                        duration = (
-                            f"{track.derived.duration:.0f}"
-                            if track.derived.duration
-                            else "—"
-                        )
-                        vocal_text = vocal_label(track)
-                        if track.derived.lyrics:
-                            vocal_text += " / текст есть"
-                        with gr.Row(equal_height=True):
-                            play_button = gr.Button(
-                                "▶",
-                                size="sm",
-                                min_width=36,
-                                elem_classes="soundseek-row-play",
-                            )
-                            play_button.click(
-                                fn=lambda tid=track_id: play_track(tid),
-                                inputs=None,
-                                outputs=[
-                                    global_player,
-                                    global_audio,
-                                    global_meta,
-                                ],
-                            )
-                            gr.Markdown(f"{index}", scale=0, min_width=30)
-                            gr.Markdown(title, scale=4)
-                            gr.Markdown(
-                                track.derived.content_type or "—", scale=1
-                            )
-                            gr.Markdown(track.derived.genre or "—", scale=2)
-                            gr.Markdown(track.derived.mood or "—", scale=2)
-                            with gr.Column(scale=3):
-                                if status in ("idle", "error", "skipped"):
-                                    force = status in ("error", "skipped")
-                                    button = gr.Button(
-                                        f"{label} ({vocal_text})",
-                                        size="sm",
-                                        variant=variant,
-                                    )
-                                    button.click(
-                                        fn=lambda tid=track_id, f=force: enqueue_and_status(
-                                            tid, f
-                                        ),
-                                        inputs=None,
-                                        outputs=track_status_state,
-                                    )
-                                else:
-                                    gr.Button(
-                                        f"{label} ({vocal_text})",
-                                        size="sm",
-                                        variant=variant,
-                                        interactive=False,
-                                    )
-                            gr.Markdown(duration, scale=1)
+                table_html = format_library_table(
+                    visible,
+                    status_map,
+                    selected_track_id or "",
+                )
+                table = gr.HTML(
+                    value=table_html,
+                    js_on_load=LIBRARY_JS,
+                    elem_id="soundseek-library-table",
+                )
+                table.track_play(
+                    fn=handle_track_play,
+                    inputs=None,
+                    outputs=[global_player, global_audio, global_meta],
+                )
+                table.track_enrich(
+                    fn=handle_track_enrich,
+                    inputs=None,
+                    outputs=track_status_state,
+                )
+                table.track_select(
+                    fn=handle_track_select,
+                    inputs=None,
+                    outputs=selected_track_state,
+                )
 
             gr.Markdown("---")
-            gr.Markdown("### Прослушивание и редактирование")
+            gr.Markdown(
+                "### Прослушивание и редактирование",
+                elem_id="soundseek-edit-panel",
+            )
             with gr.Row():
                 track_dropdown = gr.Dropdown(
                     choices=get_track_choices(),
@@ -758,7 +769,11 @@ with gr.Blocks(
                         ],
                     )
 
-            with gr.Accordion("Редактировать теги и метаданные", open=False):
+            with gr.Accordion(
+                "Редактировать теги и метаданные",
+                open=False,
+                elem_id="soundseek-edit-accordion",
+            ) as edit_accordion:
                 gr.Markdown("**Теги файла**")
                 with gr.Row():
                     edit_title = gr.Textbox(label="Название", scale=2)
@@ -800,6 +815,25 @@ with gr.Blocks(
                     retry_btn = gr.Button("Перераспознать текст (Demucs + Whisper)")
                     delete_btn = gr.Button("Удалить из индекса", variant="stop")
 
+            selected_track_state.change(
+                fn=select_track_for_edit,
+                inputs=selected_track_state,
+                outputs=[
+                    track_dropdown,
+                    edit_accordion,
+                    cover_image,
+                    edit_title,
+                    edit_artist,
+                    edit_album,
+                    edit_year,
+                    edit_tag_genre,
+                    edit_derived_genre,
+                    edit_derived_mood,
+                    edit_lyrics,
+                    edit_user_notes,
+                    track_status_text,
+                ],
+            )
             track_dropdown.change(
                 fn=load_track_for_edit,
                 inputs=track_dropdown,
@@ -1002,6 +1036,10 @@ if __name__ == "__main__":
         server_name="127.0.0.1",
         server_port=7860,
         inbrowser=True,
-        theme=gr.themes.Soft(),
+        theme=gr.themes.Soft(
+            primary_hue="teal",
+            secondary_hue="cyan",
+            neutral_hue="slate",
+        ),
         css=APP_CSS,
     )

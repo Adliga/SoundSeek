@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 import tempfile
 import time
 from pathlib import Path
@@ -17,6 +18,64 @@ from .config import (
 from .db import VectorDB
 from .embeddings import TextEmbedder
 from .models import LyricsSegment, Track
+
+
+def _language_hint(track: Track) -> Optional[str]:
+    """Подсказывает Whisper язык по письменности названия и исполнителя.
+
+    Автоопределение на отделённом вокале иногда ошибается: русский трек
+    может быть принят за латынь, после чего Whisper выдаёт набор тире или
+    транслитерацию. Для кириллицы и японской письменности подсказка
+    надёжнее, чем автоопределение по короткому вокальному фрагменту.
+    """
+    text = " ".join(
+        [
+            track.tags.title,
+            track.tags.artist,
+            track.tags.album,
+            Path(track.path).stem,
+        ]
+    )
+    if re.search(r"[іїєґІЇЄҐ]", text):
+        return "uk"
+    if re.search(r"[А-Яа-яЁё]", text):
+        return "ru"
+    if re.search(r"[ぁ-んァ-ヶ]", text):
+        return "ja"
+    if re.search(r"[가-힣]", text):
+        return "ko"
+    return None
+
+
+def _max_token_run(tokens: list[str]) -> int:
+    best = 0
+    current = 0
+    previous = ""
+    for token in tokens:
+        if token == previous:
+            current += 1
+        else:
+            previous = token
+            current = 1
+        best = max(best, current)
+    return best
+
+
+def _looks_like_hallucination(text: str) -> bool:
+    """Отсеивает характерные зацикливания Whisper на музыке и шуме."""
+    text = (text or "").strip()
+    if not text:
+        return False
+    if re.search(r"(.)\1{10,}", text, flags=re.UNICODE):
+        return True
+    tokens = re.findall(r"\w+", text.lower(), flags=re.UNICODE)
+    if not tokens:
+        return False
+    if _max_token_run(tokens) > 5:
+        return True
+    if len(tokens) >= 6 and len(set(tokens)) / len(tokens) < 0.22:
+        return True
+    return False
 
 
 class EnrichmentService:
@@ -59,31 +118,46 @@ class EnrichmentService:
             return None
 
     def _transcribe(
-        self, audio_path: str
+        self, audio_path: str, language: Optional[str] = None
     ) -> tuple[str, str, list[LyricsSegment], str]:
         try:
             model = self._get_whisper()
             result = model.transcribe(
                 audio_path,
-                language=None,
+                language=language,
                 fp16=False,
                 condition_on_previous_text=False,
                 no_speech_threshold=0.6,
                 logprob_threshold=-1.0,
                 temperature=0.0,
             )
-            text = str(result.get("text", "")).strip()
-            language = str(result.get("language", ""))
-            segments = [
-                LyricsSegment(
-                    start=float(segment.get("start", 0.0)),
-                    end=float(segment.get("end", 0.0)),
-                    text=str(segment.get("text", "")).strip(),
-                )
+            detected_language = str(result.get("language", ""))
+            raw_segments = [
+                segment
                 for segment in result.get("segments", [])
                 if str(segment.get("text", "")).strip()
             ]
-            return text, language, segments, ""
+            kept_segments = []
+            for segment in raw_segments:
+                text = str(segment.get("text", "")).strip()
+                try:
+                    compression = float(segment.get("compression_ratio", 0.0))
+                except (TypeError, ValueError):
+                    compression = 0.0
+                # Высокий compression ratio — почти всегда зацикленный
+                # «мастер, мастер...» или «Аааа...» на инструментальном
+                # фрагменте, а не реальная строка песни.
+                if compression > 3.0 or _looks_like_hallucination(text):
+                    continue
+                kept_segments.append(
+                    LyricsSegment(
+                        start=float(segment.get("start", 0.0)),
+                        end=float(segment.get("end", 0.0)),
+                        text=text,
+                    )
+                )
+            text = " ".join(segment.text for segment in kept_segments).strip()
+            return text, detected_language, kept_segments, ""
         except Exception as exc:
             print(f"    Whisper error: {exc}")
             return "", "", [], str(exc)
@@ -130,7 +204,10 @@ class EnrichmentService:
                     raise RuntimeError(
                         "Demucs did not create a vocal track"
                     )
-                lyrics, language, segments, error = self._transcribe(vocals_path)
+                lyrics, language, segments, error = self._transcribe(
+                    vocals_path,
+                    language=_language_hint(track),
+                )
                 if error:
                     raise RuntimeError(f"Whisper: {error}")
         except Exception as exc:

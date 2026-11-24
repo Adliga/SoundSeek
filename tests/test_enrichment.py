@@ -1,7 +1,11 @@
 import numpy as np
 
 from soundseek_core.config import WHISPER_MODEL_SIZE
-from soundseek_core.enrichment import EnrichmentService
+from soundseek_core.enrichment import (
+    EnrichmentService,
+    _language_hint,
+    _looks_like_hallucination,
+)
 
 from .conftest import make_track
 
@@ -46,7 +50,11 @@ def test_force_enrichment_keeps_previous_lyrics_on_empty_asr(monkeypatch):
     track.derived.enrich_status = "done"
     service, db = _service()
     monkeypatch.setattr(service, "_separate_vocals", lambda path, tmp: "vocals.wav")
-    monkeypatch.setattr(service, "_transcribe", lambda path: ("", "", [], ""))
+    monkeypatch.setattr(
+        service,
+        "_transcribe",
+        lambda path, language=None: ("", "", [], ""),
+    )
 
     assert service.enrich_single_track(track, force=True) is True
     assert track.derived.lyrics == "Старый сохранённый текст"
@@ -62,7 +70,7 @@ def test_force_enrichment_replaces_lyrics_and_marks_whisper(monkeypatch):
     monkeypatch.setattr(
         service,
         "_transcribe",
-        lambda path: (
+        lambda path, language=None: (
             "Новый распознанный текст песни",
             "ru",
             [],
@@ -74,3 +82,19 @@ def test_force_enrichment_replaces_lyrics_and_marks_whisper(monkeypatch):
     assert track.derived.lyrics == "Новый распознанный текст песни"
     assert track.derived.lyrics_source == "whisper"
     assert track.derived.has_vocal is True
+
+
+def test_language_hint_uses_cyrillic_metadata():
+    track = make_track("track", "Бал лицемеров", "Порнофильмы")
+    assert _language_hint(track) == "ru"
+
+
+def test_language_hint_uses_japanese_metadata():
+    track = make_track("track", "ギラギラ", "Ado")
+    assert _language_hint(track) == "ja"
+
+
+def test_hallucination_detector_catches_repeated_words():
+    assert _looks_like_hallucination("мастер, " * 20)
+    assert _looks_like_hallucination("Аааааааааааааааааа")
+    assert not _looks_like_hallucination("Я управляю ритмами сердец")

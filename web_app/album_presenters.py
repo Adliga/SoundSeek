@@ -251,7 +251,7 @@ def _track_row(index: int, track: Track) -> str:
 def format_album_detail(album: Album | None) -> str:
     if album is None:
         return (
-            '<div class="soundseek-album-detail soundseek-light-card '
+            '<div class="soundseek-album-detail soundseek-card '
             'soundseek-album-detail-empty">'
             '<div class="soundseek-album-detail-kicker">Альбомы</div>'
             '<div class="soundseek-album-detail-title">Выберите альбом</div>'
@@ -268,7 +268,7 @@ def format_album_detail(album: Album | None) -> str:
         for index, track in enumerate(album.tracks, 1)
     )
     return (
-        '<div class="soundseek-album-detail soundseek-light-card">'
+        '<div class="soundseek-album-detail soundseek-card">'
         '<div class="soundseek-album-detail-head">'
         '<div class="soundseek-album-detail-cover">'
         f"{_cover_html(album)}"

@@ -1704,10 +1704,10 @@ body {
 /* ---------- Полоса фильтров ---------- */
 
 .soundseek-filter-bar {
-    padding: 12px !important;
-    background: var(--ss-surface) !important;
-    border: 1px solid var(--ss-line) !important;
-    border-radius: var(--ss-radius-lg) !important;
+    padding: 0 !important;
+    background: transparent !important;
+    border: 0 !important;
+    border-radius: var(--ss-radius-md) !important;
     gap: 10px !important;
 }
 
@@ -2353,5 +2353,169 @@ body {
     color: var(--ss-text-soft) !important;
     font-size: 13px;
     text-align: center;
+}
+
+/* ---------- Полировка вёрстки и полей ---------- */
+
+/* Фиксируем вертикальную полосу прокрутки: при переключении вкладок
+   содержимое больше не сдвигается влево-вправо. */
+html {
+    overflow-y: scroll !important;
+}
+
+/* Чуть крупнее и с воздухом сверху главный заголовок. */
+.gradio-container h1,
+.gradio-container .prose h1 {
+    margin-top: 10px !important;
+    margin-bottom: 0.35rem !important;
+    padding-top: 4px;
+    font-size: 2.35rem !important;
+    line-height: 1.12 !important;
+}
+
+.gradio-container h1::after,
+.gradio-container .prose h1::after {
+    margin-top: 14px;
+}
+
+/* Основные поверхности и поля — тонкая бирюзовая обводка. */
+.gradio-container {
+    --block-border-color: rgba(94, 234, 212, 0.18) !important;
+    --input-border-color: rgba(94, 234, 212, 0.34) !important;
+}
+
+.soundseek-card,
+.soundseek-summary,
+.soundseek-result-card,
+.soundseek-lib,
+.soundseek-playlist,
+.soundseek-album-detail,
+.soundseek-map-card,
+.soundseek-empty-card,
+.soundseek-albums-empty {
+    border-color: rgba(94, 234, 212, 0.22) !important;
+}
+
+/* Строка поиска, карта и плейлист: кнопки по высоте равны полям. */
+.soundseek-search-row,
+.soundseek-map-controls,
+.soundseek-playlist-controls {
+    align-items: stretch !important;
+}
+
+.soundseek-toolbar-button,
+.soundseek-toolbar-button button {
+    min-height: 44px !important;
+}
+
+.soundseek-search-row .soundseek-toolbar-button,
+.soundseek-map-controls .soundseek-toolbar-button,
+.soundseek-playlist-controls .soundseek-toolbar-button {
+    display: flex !important;
+    align-self: stretch !important;
+}
+
+.soundseek-search-row .soundseek-toolbar-button button,
+.soundseek-map-controls .soundseek-toolbar-button button,
+.soundseek-playlist-controls .soundseek-toolbar-button button {
+    height: 100% !important;
+}
+
+/* Шапка библиотеки: фиксированная высота и фон до правого края,
+   включая место под вертикальной полосой прокрутки. */
+.soundseek-lib-scroll {
+    --ss-lib-head-h: 42px;
+    background: linear-gradient(
+        to bottom,
+        var(--ss-surface-2) 0,
+        var(--ss-surface-2) calc(var(--ss-lib-head-h) - 1px),
+        var(--ss-line-strong) calc(var(--ss-lib-head-h) - 1px),
+        var(--ss-line-strong) var(--ss-lib-head-h),
+        var(--ss-surface) var(--ss-lib-head-h),
+        var(--ss-surface) 100%
+    ) !important;
+}
+
+.soundseek-lib-scroll::-webkit-scrollbar-track {
+    background: transparent !important;
+}
+
+.soundseek-lib-head {
+    height: var(--ss-lib-head-h);
+    min-height: var(--ss-lib-head-h);
+    padding: 0 18px !important;
+    box-sizing: border-box;
+    background: var(--ss-surface-2) !important;
+    border-bottom: 1px solid var(--ss-line-strong) !important;
+    line-height: 1.35;
+}
+
+.soundseek-lib-head .soundseek-lib-cell {
+    color: inherit !important;
+    font-size: inherit;
+    font-weight: inherit;
+    line-height: inherit;
+    letter-spacing: inherit;
+    text-transform: inherit;
+}
+
+/* Вкладки: ещё крупнее текст и ниже относительно верхней границы. */
+.gradio-container .tab-container > button {
+    padding-top: 4px !important;
+    font-size: 18px !important;
+    font-weight: 600 !important;
+}
+
+/* Кнопки справа от обложки занимают всю свободную область. */
+.soundseek-edit-actions {
+    min-height: 240px;
+    gap: 10px !important;
+}
+
+.soundseek-edit-actions > * {
+    flex: 1 1 0 !important;
+    width: 100% !important;
+}
+
+.soundseek-edit-actions button {
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 44px !important;
+}
+
+/* Альбомы: блок выбора и кнопка обновления в одной строке. */
+.soundseek-albums-top {
+    align-items: flex-start !important;
+}
+
+.soundseek-albums-top .soundseek-album-detail {
+    margin-bottom: 0 !important;
+}
+
+.soundseek-albums-top .html-container {
+    padding: 0 !important;
+}
+
+.soundseek-albums-top .soundseek-toolbar-button,
+.soundseek-albums-top .soundseek-toolbar-button button {
+    width: 100% !important;
+    min-height: 44px !important;
+}
+
+/* Пока альбом не выбран, кнопка обновления совпадает по высоте
+   с блоком «Выберите альбом»: верхняя и нижняя границы на одном уровне. */
+.soundseek-albums-top:has(.soundseek-album-detail-empty) {
+    align-items: stretch !important;
+}
+
+.soundseek-albums-top:has(.soundseek-album-detail-empty) .soundseek-toolbar-button {
+    align-self: stretch !important;
+    height: auto !important;
+    min-height: 0 !important;
+}
+
+.soundseek-albums-top:has(.soundseek-album-detail-empty) .soundseek-toolbar-button button {
+    height: 100% !important;
+    min-height: 0 !important;
 }
 """

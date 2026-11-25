@@ -93,17 +93,63 @@ def get_status_map():
     return worker.status_map()
 
 
+_enrichment_was_active = False
+
+
+def _enrichment_status_message(status_map: dict[str, str]) -> str:
+    active = [
+        track_id
+        for track_id, status in status_map.items()
+        if status in ("running", "queued")
+    ]
+    if not active:
+        return ""
+
+    running_id = next(
+        (track_id for track_id in active if status_map[track_id] == "running"),
+        None,
+    )
+    track_id = running_id or active[0]
+    track = indexer.db.get(track_id)
+    title = track.display_title if track else track_id
+    state = "выполняется" if running_id else "в очереди"
+    queued = len(active) - (1 if running_id else 0)
+    suffix = f"; ещё в очереди: {queued}" if queued else ""
+    return f"Распознавание текста: «{title}» — {state}{suffix}."
+
+
+def tick_status():
+    global _enrichment_was_active
+    status_map = worker.status_map()
+    message = _enrichment_status_message(status_map)
+    if message:
+        _enrichment_was_active = True
+        return status_map, message
+    if _enrichment_was_active:
+        _enrichment_was_active = False
+        return status_map, "Распознавание текста завершено."
+    return status_map, gr.update()
+
+
 def enqueue_and_status(track_id: str, force: bool = False):
     worker.enqueue(track_id, force=force)
     return worker.status_map()
 
 
 def enqueue_all():
+    global _enrichment_was_active
+    queued = 0
     for track in indexer.db.snapshot():
         status = track.derived.enrich_status
         if status in ("", "idle", "error", "skipped"):
             worker.enqueue(track.id, force=status in ("error", "skipped"))
-    return worker.status_map()
+            queued += 1
+    status_map = worker.status_map()
+    if not queued:
+        return "Нет треков, требующих распознавания.", status_map
+    _enrichment_was_active = True
+    message = _enrichment_status_message(status_map)
+    return message or f"Распознавание запущено для {queued} треков.", status_map
 
 
 # ---------- Библиотека ----------
@@ -272,10 +318,14 @@ def save_track_edits(
 
 
 def retry_enrichment(track_id):
+    global _enrichment_was_active
     if not track_id:
-        return "Не выбран трек.", worker.status_map()
+        return gr.update(), "Не выбран трек.", worker.status_map()
     worker.enqueue(track_id, force=True)
-    return "Задача поставлена в очередь.", worker.status_map()
+    status_map = worker.status_map()
+    _enrichment_was_active = True
+    message = _enrichment_status_message(status_map) or "Распознавание запущено."
+    return message, "Задача поставлена в очередь.", status_map
 
 
 # ---------- Поиск ----------
@@ -378,11 +428,19 @@ def handle_track_play(evt: gr.EventData):
 
 def handle_track_enrich(evt: gr.EventData):
     """Ставит распознавание трека в очередь из HTML-таблицы библиотеки."""
+    global _enrichment_was_active
     track_id = str(getattr(evt, "track_id", "") or "")
     if not track_id:
-        return worker.status_map()
+        return gr.update(), worker.status_map()
     force = bool(getattr(evt, "force", False))
-    return enqueue_and_status(track_id, force)
+    status_map = enqueue_and_status(track_id, force)
+    _enrichment_was_active = True
+    track = indexer.db.get(track_id)
+    title = track.display_title if track else track_id
+    message = _enrichment_status_message(status_map) or (
+        f"Распознавание текста: «{title}» — поставлено в очередь."
+    )
+    return message, status_map
 
 
 def handle_track_select(evt: gr.EventData):
@@ -510,16 +568,34 @@ with gr.Blocks(
 
     with gr.Tabs():
         with gr.Tab("Поиск по тексту"):
-            with gr.Row():
+            with gr.Row(elem_classes="soundseek-search-row"):
                 text_input = gr.Textbox(
                     label="Что ищем?",
                     placeholder="например: грустный рок, lonely day, весёлый панк",
                     scale=4,
+                    elem_id="soundseek-text-query",
                 )
                 top_k_text = gr.Slider(
                     1, 20, value=5, step=1, label="Сколько показать", scale=1
                 )
-                text_btn = gr.Button("Найти", variant="primary", scale=1)
+                text_btn = gr.Button(
+                    "Найти",
+                    variant="primary",
+                    scale=1,
+                    elem_classes="soundseek-toolbar-button",
+                )
+            gr.Examples(
+                examples=[
+                    "lonely day",
+                    "грустный рок",
+                    "весёлый панк",
+                    "рок, но не панк",
+                    "trap",
+                    "piano",
+                    "грустный рок, но не панк, с вокалом, 2010-е",
+                ],
+                inputs=text_input,
+            )
             text_output = gr.HTML(
                 label="Результаты",
                 js_on_load=PLAY_BUTTON_JS,
@@ -539,18 +615,6 @@ with gr.Blocks(
                 inputs=[text_input, top_k_text],
                 outputs=text_output,
             )
-            gr.Examples(
-                examples=[
-                    "lonely day",
-                    "грустный рок",
-                    "весёлый панк",
-                    "рок, но не панк",
-                    "trap",
-                    "piano",
-                    "грустный рок, но не панк, с вокалом, 2010-е",
-                ],
-                inputs=text_input,
-            )
 
         with gr.Tab("Поиск по аудио"):
             gr.Markdown(
@@ -567,7 +631,11 @@ with gr.Blocks(
             top_k_audio = gr.Slider(
                 1, 20, value=5, step=1, label="Сколько показать"
             )
-            audio_btn = gr.Button("Найти похожее", variant="primary")
+            audio_btn = gr.Button(
+                "Найти похожее",
+                variant="primary",
+                elem_classes="soundseek-toolbar-button",
+            )
             audio_output = gr.HTML(
                 label="Результаты",
                 js_on_load=PLAY_BUTTON_JS,
@@ -723,7 +791,7 @@ with gr.Blocks(
                 table.track_enrich(
                     fn=handle_track_enrich,
                     inputs=None,
-                    outputs=track_status_state,
+                    outputs=[status_msg, track_status_state],
                 )
                 table.track_select(
                     fn=handle_track_select,
@@ -750,14 +818,18 @@ with gr.Blocks(
                     cover_image = gr.Image(
                         label="Обложка", height=240, interactive=False
                     )
-                with gr.Column(scale=3):
-                    gr.Markdown(
-                        "Трек воспроизводится в глобальном плеере справа. "
-                        "Плеер остаётся на месте при переключении вкладок."
-                    )
+                with gr.Column(scale=3, elem_classes="soundseek-edit-actions"):
                     edit_play_btn = gr.Button(
                         "▶ Слушать выбранный трек",
-                        variant="secondary",
+                        variant="primary",
+                    )
+                    retry_btn = gr.Button(
+                        "Перераспознать текст (Demucs + Whisper)",
+                        variant="primary",
+                    )
+                    delete_btn = gr.Button(
+                        "Удалить из индекса",
+                        variant="primary",
                     )
                     edit_play_btn.click(
                         fn=play_track,
@@ -811,9 +883,6 @@ with gr.Blocks(
                 )
                 save_btn = gr.Button("Сохранить изменения", variant="primary")
                 save_status = gr.Textbox(label="Статус сохранения", interactive=False)
-                with gr.Row():
-                    retry_btn = gr.Button("Перераспознать текст (Demucs + Whisper)")
-                    delete_btn = gr.Button("Удалить из индекса", variant="stop")
 
             selected_track_state.change(
                 fn=select_track_for_edit,
@@ -874,7 +943,7 @@ with gr.Blocks(
             retry_btn.click(
                 fn=retry_enrichment,
                 inputs=track_status_text,
-                outputs=[save_status, track_status_state],
+                outputs=[status_msg, save_status, track_status_state],
             )
             delete_btn.click(
                 fn=remove_track,
@@ -895,11 +964,14 @@ with gr.Blocks(
             enqueue_all_btn.click(
                 fn=enqueue_all,
                 inputs=None,
-                outputs=track_status_state,
+                outputs=[status_msg, track_status_state],
             )
 
             timer = gr.Timer(2.0)
-            timer.tick(fn=get_status_map, outputs=track_status_state)
+            timer.tick(
+                fn=tick_status,
+                outputs=[track_status_state, status_msg],
+            )
 
         with gr.Tab("Карта аудиотеки"):
             gr.Markdown(
@@ -908,7 +980,7 @@ with gr.Blocks(
                 "включить его в глобальном плеере."
             )
             with gr.Column(elem_id="soundseek-map-content"):
-                with gr.Row():
+                with gr.Row(elem_classes="soundseek-map-controls"):
                     map_color = gr.Dropdown(
                         choices=[
                             ("по жанру", "genre"),
@@ -919,7 +991,12 @@ with gr.Blocks(
                         label="Цвет",
                         scale=2,
                     )
-                    map_btn = gr.Button("Пересчитать карту", scale=1)
+                    map_btn = gr.Button(
+                        "Пересчитать карту",
+                        variant="primary",
+                        scale=1,
+                        elem_classes="soundseek-toolbar-button",
+                    )
                 map_output = gr.HTML(
                     value=update_embedding_map("genre"),
                     js_on_load=MAP_JS,
@@ -942,20 +1019,22 @@ with gr.Blocks(
             )
 
         with gr.Tab("Альбомы"):
-            with gr.Row():
-                gr.Markdown("### Альбомы", scale=4)
-                album_refresh = gr.Button("Обновить альбомы", scale=1)
-            gr.Markdown(
-                "Основные альбомы собраны по типу контента. Отдельно показаны "
-                "альбомы, для которых в библиотеке есть минимум два трека с "
-                "одинаковыми метаданными. Нажмите на обложку, чтобы увидеть треки."
-            )
             album_selected = gr.State("")
-            album_detail = gr.HTML(
-                value=format_album_detail(None),
-                elem_id="soundseek-album-detail",
-                js_on_load=PLAY_BUTTON_JS,
-            )
+            with gr.Row(elem_classes="soundseek-albums-top"):
+                album_detail = gr.HTML(
+                    value=format_album_detail(None),
+                    elem_id="soundseek-album-detail",
+                    js_on_load=PLAY_BUTTON_JS,
+                    scale=4,
+                    min_width=320,
+                )
+                album_refresh = gr.Button(
+                    "Обновить альбомы",
+                    variant="primary",
+                    scale=1,
+                    min_width=180,
+                    elem_classes="soundseek-toolbar-button",
+                )
             album_output = gr.HTML(
                 value=build_albums_view(*album_sections()),
                 js_on_load=ALBUM_JS,
@@ -1001,7 +1080,7 @@ with gr.Blocks(
                     label="Конец (необязательно)",
                     scale=2,
                 )
-            with gr.Row():
+            with gr.Row(elem_classes="soundseek-playlist-controls"):
                 playlist_genre = gr.Dropdown(
                     choices=GENRE_CHOICES,
                     value="",
@@ -1011,7 +1090,12 @@ with gr.Blocks(
                 playlist_length = gr.Slider(
                     3, 30, value=10, step=1, label="Длина", scale=2
                 )
-                playlist_btn = gr.Button("Собрать плейлист", variant="primary", scale=1)
+                playlist_btn = gr.Button(
+                    "Собрать плейлист",
+                    variant="primary",
+                    scale=1,
+                    elem_classes="soundseek-toolbar-button",
+                )
             playlist_output = gr.HTML(js_on_load=PLAY_BUTTON_JS)
             playlist_output.track_play(
                 fn=handle_track_play,

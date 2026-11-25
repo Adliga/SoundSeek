@@ -5,7 +5,7 @@ from tests.conftest import make_track
 from web_app.presenters import format_results
 
 
-def test_result_card_marks_light_text_for_dark_theme() -> None:
+def test_result_card_uses_dark_theme_markup() -> None:
     track = make_track(
         "miku",
         "Ms. Miku After Dark",
@@ -27,16 +27,16 @@ def test_result_card_marks_light_text_for_dark_theme() -> None:
 
     html = format_results([hit], "текст запроса: miku")
 
-    assert "class=\"soundseek-light-card\"" in html
+    assert 'class="soundseek-result-card"' in html
     assert "soundseek-summary" in html
-    assert "soundseek-muted" in html
-    assert "soundseek-faint" in html
+    assert "soundseek-result-meta" in html
+    assert "soundseek-score-detail" in html
     assert 'data-track-play="miku"' in html
-    assert "Заметка:" in html
+    assert "Заметка" in html
 
 
-def test_empty_result_uses_warning_card_class() -> None:
+def test_empty_result_uses_empty_card_class() -> None:
     html = format_results([], empty_hint="Ничего не найдено.")
 
-    assert "soundseek-warning-card" in html
+    assert "soundseek-empty-card" in html
     assert "Ничего не найдено." in html

@@ -14,7 +14,48 @@ LIBRARY_JS = r"""
   if (!root || root.dataset.soundseekLibBound === "1") return;
   root.dataset.soundseekLibBound = "1";
 
+  const SCROLL_KEY = "__soundseekLibraryScrollTop";
+  const SCROLL_SELECTOR = ".soundseek-lib-scroll";
+
+  const rememberScroll = () => {
+    const scroller = root.querySelector(SCROLL_SELECTOR);
+    if (scroller) window[SCROLL_KEY] = scroller.scrollTop;
+  };
+
+  const restoreScroll = () => {
+    const scroller = root.querySelector(SCROLL_SELECTOR);
+    if (!scroller) return;
+
+    if (scroller.dataset.soundseekScrollBound !== "1") {
+      scroller.dataset.soundseekScrollBound = "1";
+      scroller.addEventListener(
+        "scroll",
+        () => {
+          window[SCROLL_KEY] = scroller.scrollTop;
+        },
+        { passive: true }
+      );
+    }
+
+    const savedTop = Number(window[SCROLL_KEY] || 0);
+    if (savedTop <= 0) return;
+
+    const apply = () => {
+      if (scroller.isConnected) scroller.scrollTop = savedTop;
+    };
+    apply();
+    window.requestAnimationFrame(() => window.requestAnimationFrame(apply));
+  };
+
+  restoreScroll();
+
+  // Gradio перерисовывает HTML-таблицу при изменении статуса или выбора
+  // трека. Возвращаем прокрутку после каждой такой перерисовки.
+  const observer = new MutationObserver(restoreScroll);
+  observer.observe(root, { childList: true, subtree: true });
+
   root.addEventListener("click", (event) => {
+    rememberScroll();
     const playBtn = event.target.closest("[data-track-play]");
     if (playBtn && root.contains(playBtn)) {
       event.preventDefault();
